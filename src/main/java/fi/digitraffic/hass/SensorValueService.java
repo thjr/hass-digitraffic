@@ -1,22 +1,36 @@
 package fi.digitraffic.hass;
 
-import fi.digitraffic.mqtt.MqttService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+
 @Component
 public class SensorValueService {
-    private final String hassAddress;
+    private static final String HASS_ADDRESS = "hassio";
     private final String hassToken;
 
     private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
 
-    public SensorValueService(@Value("${HASS_HOST}") final String hassAddress, @Value("{HASS_TOKEN}") final String hassToken) {
-        this.hassAddress = hassAddress;
+    public SensorValueService(@Value("{HASS_TOKEN}") final String hassToken) {
         this.hassToken = hassToken;
+    }
 
-        LOG.info("address={} token={}", hassAddress, hassToken);
+    public void postSensorValue(final String entity, final String sensor, final String value) {
+        final String url = String.format("%s/api/states/sensor.%s_%s", HASS_ADDRESS, entity, sensor);
+        final HassStateData data = new HassStateData(value, Collections.emptyList());
+    }
+
+    private static class HassStateData {
+        public final Object state;
+        public final List<String> attributes;
+
+        private HassStateData(Object state, List<String> attributes) {
+            this.state = state;
+            this.attributes = attributes;
+        }
     }
 }

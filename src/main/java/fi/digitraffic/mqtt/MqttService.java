@@ -1,28 +1,31 @@
 package fi.digitraffic.mqtt;
 
 import com.google.gson.*;
+import fi.digitraffic.hass.SensorValueService;
 import fi.digitraffic.mqtt.model.WeatherData;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Type;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Component
 public class MqttService {
     private static final String serverAddress = "wss://tie.digitraffic.fi:61619/mqtt";
-    private static final String username = "digitraffic";
-    private static final String password = "digitrafficPassword";
+    private static final String USERNAME = "digitraffic";
+    private static final String PASSWORD = "digitrafficPassword";
     private static final String CLIENT_ID = "hass-digitraffic-";
 
     private static final Logger LOG = LoggerFactory.getLogger(MqttService.class);
 
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
 
-    public MqttService() throws MqttException {
+    private final SensorValueService sensorValueService;
+
+    public MqttService(SensorValueService sensorValueService) throws MqttException {
+        this.sensorValueService = sensorValueService;
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
 
@@ -58,13 +61,15 @@ public class MqttService {
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
 
         System.out.println(String.format("%s %s", wd.sensorValue, wd.measuredTime));
+
+        sensorValueService.postSensorValue(topic, "sensor", wd.sensorValue);
     }
 
     private static MqttConnectOptions setUpConnectionOptions() {
         final MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
-        connOpts.setUserName(username);
-        connOpts.setPassword(password.toCharArray());
+        connOpts.setUserName(USERNAME);
+        connOpts.setPassword(PASSWORD.toCharArray());
         return connOpts;
     }
 }

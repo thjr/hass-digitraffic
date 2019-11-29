@@ -13,7 +13,6 @@
         "boot": "auto",
         "options": {},
         "schema": {},
+        "homeassistant_api": true,
         "startup": "before"
-
-
 }

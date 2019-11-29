@@ -9,5 +9,5 @@ RUN \
         openjdk8-jre=8.222.10-r0 \
     && rm -fr /tmp/*
 
-CMD [ "java", "-jar", "/app.jar" ]
+CMD [ "/usr/bin/java", "-jar", "/app.jar" ]
 
