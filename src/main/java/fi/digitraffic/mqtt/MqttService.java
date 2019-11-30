@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -55,14 +56,14 @@ public class MqttService {
         LOG.info("Starting mqtt client");
     }
 
-    private void handleMessage(final String topic, final MqttMessage message) {
+    private void handleMessage(final String topic, final MqttMessage message) throws IOException {
         System.out.println(String.format("%s: topic %s, message %s", ZonedDateTime.now().toString(), topic, message));
 
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
 
         System.out.println(String.format("%s %s", wd.sensorValue, wd.measuredTime));
 
-        sensorValueService.postSensorValue(topic, "sensor", wd.sensorValue);
+        sensorValueService.postSensorValue("testi", "temperature", wd.sensorValue);
     }
 
     private static MqttConnectOptions setUpConnectionOptions() {
