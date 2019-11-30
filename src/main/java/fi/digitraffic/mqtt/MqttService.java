@@ -58,7 +58,7 @@ public class MqttService {
 
             }
         });
-        client.subscribe("weather/4057/#");
+        client.subscribe("weather/4057/3");
 
         LOG.info("Starting mqtt client");
     }
