@@ -29,6 +29,8 @@ public class SensorValueService {
         final HassStateData data = new HassStateData(value, Collections.emptyList());
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
+        LOG.info("posting sensor value to {}", url.getPath());
+
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("X-HA-Access", hassToken);
         con.setRequestMethod("PUT");

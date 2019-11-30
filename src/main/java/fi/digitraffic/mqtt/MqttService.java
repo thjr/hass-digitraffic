@@ -51,19 +51,18 @@ public class MqttService {
 
             }
         });
-        client.subscribe("weather/#");
+        client.subscribe("weather/4057/3");
 
         LOG.info("Starting mqtt client");
     }
 
     private void handleMessage(final String topic, final MqttMessage message) throws IOException {
-        System.out.println(String.format("%s: topic %s, message %s", ZonedDateTime.now().toString(), topic, message));
-
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
+        final int httpCode = sensorValueService.postSensorValue("paasikiventie", "temperature", wd.sensorValue);
 
-        System.out.println(String.format("%s %s", wd.sensorValue, wd.measuredTime));
-
-        sensorValueService.postSensorValue("testi", "temperature", wd.sensorValue);
+        if(httpCode == 200) {
+            LOG.error("post sensor value returned {}", httpCode);
+        }
     }
 
     private static MqttConnectOptions setUpConnectionOptions() {
