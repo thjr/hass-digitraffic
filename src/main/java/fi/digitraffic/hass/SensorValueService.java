@@ -32,8 +32,8 @@ public class SensorValueService {
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("X-HA-Access", hassToken);
         con.setRequestMethod("PUT");
-        con.getOutputStream().write(gson.toJson(data).getBytes());
         con.setDoOutput(true);
+        con.getOutputStream().write(gson.toJson(data).getBytes());
 
         return con.getResponseCode();
     }
