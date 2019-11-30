@@ -67,6 +67,8 @@ public class MqttService {
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
         final int httpCode = sensorValueService.postSensorValue("paasikiventie", "temperature", wd.sensorValue);
 
+        LOG.info("topic {} got message {}", topic, wd);
+
         if(httpCode == 200) {
             LOG.error("post sensor value returned {}", httpCode);
         }
