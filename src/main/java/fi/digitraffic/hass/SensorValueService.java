@@ -1,8 +1,6 @@
 package fi.digitraffic.hass;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,17 +9,15 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 
 @Component
 public class SensorValueService {
     private static final String HASS_ADDRESS = "hassio";
-    private final String hassToken;
-
     private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
 
+    private final String hassToken;
     private final Gson gson = new Gson();
 
     public SensorValueService(@Value("{HASS_TOKEN}") final String hassToken) {
@@ -37,6 +33,8 @@ public class SensorValueService {
         con.setRequestProperty("X-HA-Access", hassToken);
         con.setRequestMethod("PUT");
         con.getOutputStream().write(gson.toJson(data).getBytes());
+        con.setDoOutput(true);
+
         return con.getResponseCode();
     }
 
