@@ -6,6 +6,8 @@ import fi.digitraffic.mqtt.model.WeatherData;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,7 +36,12 @@ public class MqttService {
         client.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
-
+                LOG.error("connection lost", cause);
+                try {
+                    client.reconnect();
+                } catch (final MqttException e) {
+                    LOG.error("can't reconnect", e);
+                }
             }
 
             @Override
@@ -51,7 +58,7 @@ public class MqttService {
 
             }
         });
-        client.subscribe("weather/4057/3");
+        client.subscribe("weather/4057/#");
 
         LOG.info("Starting mqtt client");
     }
