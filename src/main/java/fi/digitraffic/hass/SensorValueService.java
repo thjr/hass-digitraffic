@@ -29,7 +29,7 @@ public class SensorValueService {
     }
 
     public int postSensorValue(final String entity, final String sensor, final String value) throws IOException {
-        final URL url = new URL(String.format("%s/api/states/sensor.%s_%s", HASS_ADDRESS, entity, sensor));
+        final URL url = new URL(String.format("http://%s/api/states/sensor.%s_%s", HASS_ADDRESS, entity, sensor));
         final HassStateData data = new HassStateData(value, Collections.emptyList());
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
@@ -41,8 +41,8 @@ public class SensorValueService {
     }
 
     private static class HassStateData {
-        public final Object state;
-        public final List<String> attributes;
+        final Object state;
+        final List<String> attributes;
 
         private HassStateData(Object state, List<String> attributes) {
             this.state = state;
