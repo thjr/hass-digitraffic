@@ -14,7 +14,7 @@ import java.util.List;
 
 @Component
 public class SensorValueService {
-    private static final String HASS_ADDRESS = "hassio";
+    private static final String HASS_ADDRESS = "hassio/homeassistant";
     private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
 
     private final String hassToken;
