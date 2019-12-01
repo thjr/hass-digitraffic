@@ -22,5 +22,6 @@
                 ]
         },
         "homeassistant_api": true,
-        "startup": "before"
+        "host_network": true,
+        "startup": "application"
 }
