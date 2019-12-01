@@ -1,18 +1,21 @@
 package fi.digitraffic.mqtt;
 
 import com.google.gson.*;
+import fi.digitraffic.Options;
+import fi.digitraffic.hass.OptionsService;
 import fi.digitraffic.hass.SensorValueService;
 import fi.digitraffic.mqtt.model.WeatherData;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 public class MqttService {
@@ -26,13 +29,26 @@ public class MqttService {
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
 
     private final SensorValueService sensorValueService;
+    private final OptionsService optionsService;
 
-    public MqttService(SensorValueService sensorValueService) throws MqttException {
+    public MqttService(final SensorValueService sensorValueService, OptionsService optionsService) throws MqttException, FileNotFoundException {
         this.sensorValueService = sensorValueService;
+        this.optionsService = optionsService;
+
+        initialize();
+    }
+
+    private void initialize() throws FileNotFoundException, MqttException {
+        final Options options = optionsService.readOptions(Options.class);
+
+        createClient(options);
+    }
+
+    private void createClient(Options options) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
+        final Map<String, String> sensorNameMap = options.sensorOptions.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s.sensorName));
 
-        client.connect(setUpConnectionOptions());
         client.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
@@ -58,7 +74,15 @@ public class MqttService {
 
             }
         });
-        client.subscribe("weather/4057/3");
+        client.connect(setUpConnectionOptions());
+
+        sensorNameMap.keySet().forEach(topic -> {
+            try {
+                client.subscribe(topic);
+            } catch (final MqttException e) {
+                LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
+            }
+        });
 
         LOG.info("Starting mqtt client");
     }
