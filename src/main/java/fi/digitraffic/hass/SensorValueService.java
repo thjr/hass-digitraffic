@@ -24,8 +24,8 @@ public class SensorValueService {
         this.hassToken = hassToken;
     }
 
-    public int postSensorValue(final String entity, final String sensor, final String value) throws IOException {
-        final URL url = new URL(String.format("http://%s/api/states/sensor.%s_%s", HASS_ADDRESS, entity, sensor));
+    public int postSensorValue(final String sensorName, final String value) throws IOException {
+        final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASS_ADDRESS, sensorName));
         final HassStateData data = new HassStateData(value, Collections.emptyList());
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 

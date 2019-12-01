@@ -63,7 +63,10 @@ public class MqttService {
             @Override
             public void messageArrived(final String topic, final MqttMessage message) throws Exception {
                 try {
-                    handleMessage(topic, message);
+                    LOG.info("topic {} got message {}", topic, message.getPayload());
+
+                    final String sensorName = sensorNameMap.get(topic);
+                    handleMessage(sensorName, message);
                 } catch(final Exception e) {
                     LOG.error("error", e);
                 }
@@ -78,6 +81,7 @@ public class MqttService {
 
         sensorNameMap.keySet().forEach(topic -> {
             try {
+                LOG.info("subscribing to {}", topic);
                 client.subscribe(topic);
             } catch (final MqttException e) {
                 LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
@@ -87,11 +91,9 @@ public class MqttService {
         LOG.info("Starting mqtt client");
     }
 
-    private void handleMessage(final String topic, final MqttMessage message) throws IOException {
+    private void handleMessage(final String sensorName, final MqttMessage message) throws IOException {
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
-        final int httpCode = sensorValueService.postSensorValue("paasikiventie", "temperature", wd.sensorValue);
-
-        LOG.info("topic {} got message {}", topic, wd);
+        final int httpCode = sensorValueService.postSensorValue(sensorName, wd.sensorValue);
 
         if(httpCode == 200) {
             LOG.error("post sensor value returned {}", httpCode);
