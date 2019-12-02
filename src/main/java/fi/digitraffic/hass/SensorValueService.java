@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,8 +21,10 @@ public class SensorValueService {
     private final String hassToken;
     private final Gson gson = new Gson();
 
-    public SensorValueService(@Value("${HASS_TOKEN}") final String hassToken) {
-        this.hassToken = hassToken;
+    public SensorValueService(final Environment env) {
+        this.hassToken = env.getProperty("HASS_TOKEN");
+
+        LOG.info("hasstoken {}", hassToken);
     }
 
     public int postSensorValue(final String sensorName, final String value) throws IOException {
