@@ -20,7 +20,7 @@ public class SensorValueService {
     private final String hassToken;
     private final Gson gson = new Gson();
 
-    public SensorValueService(@Value("{HASS_TOKEN}") final String hassToken) {
+    public SensorValueService(@Value("${HASS_TOKEN}") final String hassToken) {
         this.hassToken = hassToken;
     }
 
