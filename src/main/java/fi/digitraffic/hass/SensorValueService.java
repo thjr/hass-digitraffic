@@ -37,6 +37,7 @@ public class SensorValueService {
         con.setRequestMethod("POST");
         con.setDoOutput(true);
         con.getOutputStream().write(message.getBytes());
+        con.connect();
 
         return con.getResponseCode();
     }

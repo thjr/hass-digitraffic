@@ -64,7 +64,7 @@ public class MqttService {
             public void messageArrived(final String topic, final MqttMessage message) throws Exception {
                 try {
                     if(!topic.contains("status")) {
-                        LOG.info("topic {} got message {}", topic, message.getPayload());
+                        LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
                         final String sensorName = sensorNameMap.get(topic);
                         handleMessage(sensorName, message);
