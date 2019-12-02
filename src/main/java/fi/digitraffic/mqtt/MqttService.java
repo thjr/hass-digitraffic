@@ -63,10 +63,12 @@ public class MqttService {
             @Override
             public void messageArrived(final String topic, final MqttMessage message) throws Exception {
                 try {
-                    LOG.info("topic {} got message {}", topic, message.getPayload());
+                    if(!topic.contains("status")) {
+                        LOG.info("topic {} got message {}", topic, message.getPayload());
 
-                    final String sensorName = sensorNameMap.get(topic);
-                    handleMessage(sensorName, message);
+                        final String sensorName = sensorNameMap.get(topic);
+                        handleMessage(sensorName, message);
+                    }
                 } catch(final Exception e) {
                     LOG.error("error", e);
                 }
@@ -87,6 +89,8 @@ public class MqttService {
                 LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
             }
         });
+
+        client.subscribe("weather/status");
 
         LOG.info("Starting mqtt client");
     }

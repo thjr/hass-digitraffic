@@ -28,14 +28,15 @@ public class SensorValueService {
         final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASS_ADDRESS, sensorName));
         final HassStateData data = new HassStateData(value, Collections.emptyList());
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        final String message = gson.toJson(data);
 
-        LOG.info("posting sensor value to {}", url.getPath());
+        LOG.info("posting {} to {}", message, url.getPath());
 
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("X-HA-Access", hassToken);
         con.setRequestMethod("PUT");
         con.setDoOutput(true);
-        con.getOutputStream().write(gson.toJson(data).getBytes());
+        con.getOutputStream().write(message.getBytes());
 
         return con.getResponseCode();
     }
