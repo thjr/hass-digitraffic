@@ -47,7 +47,7 @@ public class MqttService {
     private void createClient(Options options) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
-        final Map<String, String> sensorNameMap = options.sensorOptions.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s.sensorName));
+        final Map<String, Options.SensorOption> optionsMap = options.sensorOptions.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
 
         client.setCallback(new MqttCallback() {
             @Override
@@ -66,8 +66,7 @@ public class MqttService {
                     if(!topic.contains("status")) {
                         LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
-                        final String sensorName = sensorNameMap.get(topic);
-                        handleMessage(sensorName, message);
+                        handleMessage(message, optionsMap.get(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -81,7 +80,7 @@ public class MqttService {
         });
         client.connect(setUpConnectionOptions());
 
-        sensorNameMap.keySet().forEach(topic -> {
+        optionsMap.keySet().forEach(topic -> {
             try {
                 LOG.info("subscribing to {}", topic);
                 client.subscribe(topic);
@@ -95,9 +94,9 @@ public class MqttService {
         LOG.info("Starting mqtt client");
     }
 
-    private void handleMessage(final String sensorName, final MqttMessage message) throws IOException {
+    private void handleMessage(final MqttMessage message, final Options.SensorOption option) throws IOException {
         final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
-        final int httpCode = sensorValueService.postSensorValue(sensorName, wd.sensorValue);
+        final int httpCode = sensorValueService.postSensorValue(option.sensorName, wd.sensorValue, option.unitOfMeasurement);
 
         if(httpCode == 200) {
             LOG.error("post sensor value returned {}", httpCode);

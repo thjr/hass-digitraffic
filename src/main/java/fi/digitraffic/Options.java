@@ -12,10 +12,12 @@ public class Options {
     public static class SensorOption {
         public final String sensorName;
         public final String mqttPath;
+        public final String unitOfMeasurement;
 
-        public SensorOption(final String sensorName, final String mqttPath) {
+        public SensorOption(final String sensorName, final String mqttPath, String unitOfMeasurement) {
             this.sensorName = sensorName;
             this.mqttPath = mqttPath;
+            this.unitOfMeasurement = unitOfMeasurement;
         }
     }
 }
