@@ -82,8 +82,12 @@ public class MqttService {
 
         optionsMap.keySet().forEach(topic -> {
             try {
-                LOG.info("subscribing to {}", topic);
-                client.subscribe(topic);
+                if(topic.contains("%") || topic.contains("*")) {
+                    LOG.error("wildchars are forbidden! {}", topic);
+                } else {
+                    LOG.info("subscribing to {}", topic);
+                    client.subscribe(topic);
+                }
             } catch (final MqttException e) {
                 LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
             }

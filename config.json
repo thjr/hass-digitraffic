@@ -14,7 +14,7 @@
         "options": {
                 "sensorOptions": [
                         { "sensorName":  "paasikiventie_temperature",
-                          "mqttPath": "4057/3",
+                          "mqttPath": "weather/4057/3",
                           "unitOfMeasurement":  "°C"}
                 ]
         },
