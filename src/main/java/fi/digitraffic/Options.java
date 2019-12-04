@@ -15,7 +15,7 @@ public class Options {
         public final String mqttPath;
         public final String unitOfMeasurement;
 
-        public SensorOption(final String sensorName, SensorType sensorType, final String mqttPath, String unitOfMeasurement) {
+        public SensorOption(final String sensorName, final SensorType sensorType, final String mqttPath, String unitOfMeasurement) {
             this.sensorName = sensorName;
             this.sensorType = sensorType;
             this.mqttPath = mqttPath;

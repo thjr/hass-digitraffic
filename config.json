@@ -15,13 +15,8 @@
                 "sensors": [
                         { "sensorName":  "paasikiventie_temperature",
                           "mqttPath": "4057/3",
-                          "sensorType": "weather",
+                          "sensorType": "WEATHER",
                           "unitOfMeasurement":  "°C"}
-                ]
-        },
-        "schema": {
-                "sensors": [
-                        { "sensorName": "str", "mqttPath":  "str", "sensorType": "str", "unitOfMeasurement":  "str"}
                 ]
         },
         "homeassistant_api": true,

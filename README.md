@@ -23,7 +23,7 @@ Configuration
     {
       "sensorName": "paasikiventie_temperature",
       "mqttPath": "4057/3",
-      "sensorType": "weather",
+      "sensorType": "WEATHER",
       "unitOfMeasurement": "°C"
     }
   ]
@@ -32,6 +32,6 @@ Configuration
 
 Datasource
 ----------
-Source: Traffic Management Finland / digitraffic.fi, lisence CC 4.0 BY
+Source: Traffic Management Finland / digitraffic.fi, license CC 4.0 BY
 
 More information about attribution can be found from the Creative Commons website.

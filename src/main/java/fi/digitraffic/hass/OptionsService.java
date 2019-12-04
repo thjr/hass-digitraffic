@@ -8,7 +8,7 @@ import java.io.FileReader;
 
 @Component
 public class OptionsService {
-    private static final String OPTIONS_FILENAME = "/data/options.json";
+    private static final String OPTIONS_FILENAME = "data/options.json";
 
     private final Gson gson = new Gson();
 
