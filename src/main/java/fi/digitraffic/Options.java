@@ -18,7 +18,7 @@ public class Options {
         public SensorOption(final String sensorName, final SensorType sensorType, final String mqttPath, String unitOfMeasurement) {
             this.sensorName = sensorName;
             this.sensorType = sensorType;
-            this.mqttPath = mqttPath;
+            this.mqttPath = String.format("%s/%s", sensorType.toString().toLowerCase(), mqttPath);
             this.unitOfMeasurement = unitOfMeasurement;
         }
     }

@@ -82,11 +82,10 @@ public class MqttService {
 
         optionsMap.values().forEach(option -> {
             final Options.SensorType sensorType = option.sensorType;
-            final String path = option.mqttPath;
-            final String topic = String.format("%s/%s", sensorType.toString().toLowerCase(), path);
+            final String topic = option.mqttPath;
 
-            if(path.contains("%") || path.contains("*")) {
-                LOG.error("wildchars are forbidden! {}", path);
+            if(topic.contains("%") || topic.contains("*")) {
+                LOG.error("wildchars are forbidden! {}", topic);
             } else {
                 try {
                     LOG.info("subscribing to {}", topic);
