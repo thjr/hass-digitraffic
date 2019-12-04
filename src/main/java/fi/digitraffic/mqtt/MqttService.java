@@ -47,7 +47,7 @@ public class MqttService {
     private void createClient(Options options) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
-        final Map<String, Options.SensorOption> optionsMap = options.sensorOptions.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
+        final Map<String, Options.SensorOption> optionsMap = options.sensors.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
 
         client.setCallback(new MqttCallback() {
             @Override
@@ -80,16 +80,20 @@ public class MqttService {
         });
         client.connect(setUpConnectionOptions());
 
-        optionsMap.keySet().forEach(topic -> {
-            try {
-                if(topic.contains("%") || topic.contains("*")) {
-                    LOG.error("wildchars are forbidden! {}", topic);
-                } else {
+        optionsMap.values().forEach(option -> {
+            final Options.SensorType sensorType = option.sensorType;
+            final String path = option.mqttPath;
+            final String topic = String.format("%s/%s", sensorType.toString().toLowerCase(), path);
+
+            if(path.contains("%") || path.contains("*")) {
+                LOG.error("wildchars are forbidden! {}", path);
+            } else {
+                try {
                     LOG.info("subscribing to {}", topic);
                     client.subscribe(topic);
+                } catch (final MqttException e) {
+                    LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
                 }
-            } catch (final MqttException e) {
-                LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
             }
         });
 
@@ -99,8 +103,17 @@ public class MqttService {
     }
 
     private void handleMessage(final MqttMessage message, final Options.SensorOption option) throws IOException {
-        final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
-        final int httpCode = sensorValueService.postSensorValue(option.sensorName, wd.sensorValue, option.unitOfMeasurement);
+        final String value;
+        final String unitOfMeasurement = option.unitOfMeasurement;
+
+        if(option.sensorType == Options.SensorType.WEATHER) {
+            final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
+            value = wd.sensorValue;
+        } else {
+            throw new IllegalArgumentException("unhandled sensortype " + option.sensorType);
+        }
+
+        final int httpCode = sensorValueService.postSensorValue(option.sensorName, value, unitOfMeasurement);
 
         if(httpCode == 200) {
             LOG.error("post sensor value returned {}", httpCode);
