@@ -1,5 +1,5 @@
 # hass-digitraffic
-==================
+------------------
 
 This Hass.io platform add-on reads data from Digitraffic and posts it to your Home Assistant instance.
 
@@ -29,3 +29,9 @@ Configuration
   ]
 }
 ```
+
+Datasource
+----------
+Source: Traffic Management Finland / digitraffic.fi, lisence CC 4.0 BY
+
+More information about attribution can be found from the Creative Commons website.
