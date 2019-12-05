@@ -20,6 +20,14 @@ public class Options {
             this.sensorType = sensorType;
             this.mqttPath = String.format("%s/%s", sensorType.toString().toLowerCase(), mqttPath);
             this.unitOfMeasurement = unitOfMeasurement;
+
+            System.out.println("calling constructor!");
+        }
+
+        public String getTopic() {
+            System.out.println("calling getTopic!");
+
+            return String.format("%s/%s", sensorType.toString().toLowerCase(), mqttPath);
         }
     }
 

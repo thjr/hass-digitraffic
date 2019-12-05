@@ -1,10 +1,12 @@
 package fi.digitraffic.mqtt;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 import fi.digitraffic.Options;
 import fi.digitraffic.hass.OptionsService;
 import fi.digitraffic.hass.SensorValueService;
-import fi.digitraffic.mqtt.model.WeatherData;
+import fi.digitraffic.mqtt.model.MqttData;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,8 +83,7 @@ public class MqttService {
         client.connect(setUpConnectionOptions());
 
         optionsMap.values().forEach(option -> {
-            final Options.SensorType sensorType = option.sensorType;
-            final String topic = option.mqttPath;
+            final String topic = option.getTopic();
 
             if(topic.contains("%") || topic.contains("*")) {
                 LOG.error("wildchars are forbidden! {}", topic);
@@ -105,8 +106,8 @@ public class MqttService {
         final String value;
         final String unitOfMeasurement = option.unitOfMeasurement;
 
-        if(option.sensorType == Options.SensorType.WEATHER) {
-            final WeatherData wd = gson.fromJson(new String(message.getPayload()), WeatherData.class);
+        if(option.sensorType == Options.SensorType.WEATHER || option.sensorType == Options.SensorType.TMS) {
+            final MqttData wd = gson.fromJson(new String(message.getPayload()), MqttData.class);
             value = wd.sensorValue;
         } else {
             throw new IllegalArgumentException("unhandled sensortype " + option.sensorType);
