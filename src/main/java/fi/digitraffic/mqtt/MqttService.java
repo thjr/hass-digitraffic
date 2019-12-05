@@ -49,7 +49,7 @@ public class MqttService {
     private void createClient(Options options) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
-        final Map<String, Options.SensorOption> optionsMap = options.sensors.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
+        final Map<String, Options.SensorOption> optionsMap = options.sensors.stream().collect(Collectors.toMap(s -> s.getTopic(), s -> s));
 
         client.setCallback(new MqttCallback() {
             @Override
