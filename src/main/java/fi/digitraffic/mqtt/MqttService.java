@@ -3,22 +3,18 @@ package fi.digitraffic.mqtt;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
-import fi.digitraffic.Options;
-import fi.digitraffic.hass.OptionsService;
+import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
 import fi.digitraffic.mqtt.model.MqttData;
-import fi.digitraffic.mqtt.model.MqttOptions;
+import fi.digitraffic.mqtt.model.MqttConfig;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
@@ -34,24 +30,24 @@ public class MqttService {
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
 
     private final SensorValueService sensorValueService;
-    private final MqttOptionService mqttOptionService;
+    private final MqttConfigService mqttConfigService;
 
-    public MqttService(final SensorValueService sensorValueService, final MqttOptionService mqttOptionService) throws MqttException, FileNotFoundException {
+    public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
         this.sensorValueService = sensorValueService;
-        this.mqttOptionService = mqttOptionService;
+        this.mqttConfigService = mqttConfigService;
 
         initialize();
     }
 
     private void initialize() throws MqttException {
-        final MqttOptions options = mqttOptionService.readAndValidate();
+        final MqttConfig options = mqttConfigService.readAndValidate();
 
         if(options != null) {
             createClient(options);
         }
     }
 
-    private void createClient(final MqttOptions options) throws MqttException {
+    private void createClient(final MqttConfig config) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
 
@@ -72,7 +68,7 @@ public class MqttService {
                     if(!topic.contains("status")) {
                         LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
-                        handleMessage(message, options.getOption(topic));
+                        handleRoadMessage(message, config.getOption(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -86,9 +82,7 @@ public class MqttService {
         });
         client.connect(setUpConnectionOptions());
 
-        options.getOptions().forEach(option -> {
-            final String topic = option.mqttPath;
-
+        config.getRoadTopics().forEach(topic -> {
             try {
                 LOG.info("subscribing to {}", topic);
                 client.subscribe(topic);
@@ -102,18 +96,12 @@ public class MqttService {
         LOG.info("Starting mqtt client");
     }
 
-    private void handleMessage(final MqttMessage message, final Options.SensorOption option) throws IOException {
-        final String value;
-        final String unitOfMeasurement = option.unitOfMeasurement;
+    private void handleRoadMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) throws IOException {
+        final String unitOfMeasurement = sensorConfig.unitOfMeasurement;
+        final MqttData wd = gson.fromJson(new String(message.getPayload()), MqttData.class);
+        final String value = wd.sensorValue;
 
-        if(option.sensorType == Options.SensorType.ROAD) {
-            final MqttData wd = gson.fromJson(new String(message.getPayload()), MqttData.class);
-            value = wd.sensorValue;
-        } else {
-            throw new IllegalArgumentException("unhandled sensortype " + option.sensorType);
-        }
-
-        final int httpCode = sensorValueService.postSensorValue(option.sensorName, value, unitOfMeasurement);
+        final int httpCode = sensorValueService.postSensorValue(sensorConfig.sensorName, value, unitOfMeasurement);
 
         if(httpCode != HTTP_OK) {
             LOG.error("post sensor value returned {}", httpCode);

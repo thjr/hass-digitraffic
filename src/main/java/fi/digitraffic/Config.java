@@ -2,10 +2,10 @@ package fi.digitraffic;
 
 import java.util.List;
 
-public class Options {
-    public List<SensorOption> sensors;
+public class Config {
+    public List<SensorConfig> sensors;
 
-    public static class SensorOption {
+    public static class SensorConfig {
         public String sensorName;
         public SensorType sensorType;
         public String mqttPath;
