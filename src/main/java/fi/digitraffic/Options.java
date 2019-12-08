@@ -10,13 +10,9 @@ public class Options {
         public SensorType sensorType;
         public String mqttPath;
         public String unitOfMeasurement;
-
-        public String getTopic() {
-            return String.format("%s/%s", sensorType.toString().toLowerCase(), mqttPath);
-        }
     }
 
     public enum SensorType {
-        WEATHER, TMS, VESSEL
+        ROAD, VESSEL, SSE
     }
 }

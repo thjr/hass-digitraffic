@@ -7,6 +7,7 @@ import fi.digitraffic.Options;
 import fi.digitraffic.hass.OptionsService;
 import fi.digitraffic.hass.SensorValueService;
 import fi.digitraffic.mqtt.model.MqttData;
+import fi.digitraffic.mqtt.model.MqttOptions;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,8 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static java.net.HttpURLConnection.HTTP_OK;
 
 @Component
 public class MqttService {
@@ -31,25 +34,26 @@ public class MqttService {
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
 
     private final SensorValueService sensorValueService;
-    private final OptionsService optionsService;
+    private final MqttOptionService mqttOptionService;
 
-    public MqttService(final SensorValueService sensorValueService, OptionsService optionsService) throws MqttException, FileNotFoundException {
+    public MqttService(final SensorValueService sensorValueService, final MqttOptionService mqttOptionService) throws MqttException, FileNotFoundException {
         this.sensorValueService = sensorValueService;
-        this.optionsService = optionsService;
+        this.mqttOptionService = mqttOptionService;
 
         initialize();
     }
 
-    private void initialize() throws FileNotFoundException, MqttException {
-        final Options options = optionsService.readOptions(Options.class);
+    private void initialize() throws MqttException {
+        final MqttOptions options = mqttOptionService.readAndValidate();
 
-        createClient(options);
+        if(options != null) {
+            createClient(options);
+        }
     }
 
-    private void createClient(Options options) throws MqttException {
+    private void createClient(final MqttOptions options) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverAddress, clientId);
-        final Map<String, Options.SensorOption> optionsMap = options.sensors.stream().collect(Collectors.toMap(s -> s.getTopic(), s -> s));
 
         client.setCallback(new MqttCallback() {
             @Override
@@ -63,12 +67,12 @@ public class MqttService {
             }
 
             @Override
-            public void messageArrived(final String topic, final MqttMessage message) throws Exception {
+            public void messageArrived(final String topic, final MqttMessage message) {
                 try {
                     if(!topic.contains("status")) {
                         LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
-                        handleMessage(message, optionsMap.get(topic));
+                        handleMessage(message, options.getOption(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -82,18 +86,14 @@ public class MqttService {
         });
         client.connect(setUpConnectionOptions());
 
-        optionsMap.values().forEach(option -> {
-            final String topic = option.getTopic();
+        options.getOptions().forEach(option -> {
+            final String topic = option.mqttPath;
 
-            if(topic.contains("%") || topic.contains("*")) {
-                LOG.error("wildchars are forbidden! {}", topic);
-            } else {
-                try {
-                    LOG.info("subscribing to {}", topic);
-                    client.subscribe(topic);
-                } catch (final MqttException e) {
-                    LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
-                }
+            try {
+                LOG.info("subscribing to {}", topic);
+                client.subscribe(topic);
+            } catch (final MqttException e) {
+                LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
             }
         });
 
@@ -106,7 +106,7 @@ public class MqttService {
         final String value;
         final String unitOfMeasurement = option.unitOfMeasurement;
 
-        if(option.sensorType == Options.SensorType.WEATHER || option.sensorType == Options.SensorType.TMS) {
+        if(option.sensorType == Options.SensorType.ROAD) {
             final MqttData wd = gson.fromJson(new String(message.getPayload()), MqttData.class);
             value = wd.sensorValue;
         } else {
@@ -115,7 +115,7 @@ public class MqttService {
 
         final int httpCode = sensorValueService.postSensorValue(option.sensorName, value, unitOfMeasurement);
 
-        if(httpCode == 200) {
+        if(httpCode != HTTP_OK) {
             LOG.error("post sensor value returned {}", httpCode);
         }
     }
