@@ -17,7 +17,7 @@
                           "mqttPath": "weather/4057/3",
                           "sensorType": "ROAD",
                           "unitOfMeasurement":  "°C",
-                          "propertyName": "",
+                          "propertyName": ""
                         }
                 ]
         },
