@@ -122,7 +122,7 @@ public class MqttService {
 
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
         try {
-            final int httpCode = 1;//sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
+            final int httpCode = sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
 
             if(httpCode != HTTP_OK) {
                 LOG.error("post sensor value returned {}", httpCode);
