@@ -1,11 +1,9 @@
 package fi.digitraffic.mqtt;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
+import com.google.gson.*;
 import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
-import fi.digitraffic.mqtt.model.MqttData;
+import fi.digitraffic.mqtt.model.MqttSensorValue;
 import fi.digitraffic.mqtt.model.MqttConfig;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
@@ -14,17 +12,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.UUID;
 
+import static fi.digitraffic.mqtt.ServerConfig.*;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Component
 public class MqttService {
-    private static final String serverAddress = "wss://tie.digitraffic.fi:61619/mqtt";
-    private static final String USERNAME = "digitraffic";
-    private static final String PASSWORD = "digitrafficPassword";
-    private static final String CLIENT_ID = "hass-digitraffic-";
-
     private static final Logger LOG = LoggerFactory.getLogger(MqttService.class);
 
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
@@ -43,15 +38,21 @@ public class MqttService {
         final MqttConfig options = mqttConfigService.readAndValidate();
 
         if(options != null) {
-            createClient(options);
+            if(!options.getRoadConfigs().isEmpty()) {
+                createClient(options.getRoadConfigs(), ServerConfig.ROAD, (message, config) -> handleRoadMessage(message, config));
+            }
+            if(!options.getSseConfigs().isEmpty()) {
+                createClient(options.getSseConfigs(), ServerConfig.MARINE, (message, config) -> handleSseMessage(message, config));
+            }
         }
     }
 
-    private void createClient(final MqttConfig config) throws MqttException {
-        final String clientId = CLIENT_ID + UUID.randomUUID().toString();
-        final IMqttClient client = new MqttClient(serverAddress, clientId);
+    private interface MessageHandler {
+        void handleMessage(final MqttMessage message, final Config.SensorConfig config) throws IOException;
+    }
 
-        client.setCallback(new MqttCallback() {
+    private MqttCallback createCallBack(final Map<String, Config.SensorConfig> configMap, final IMqttClient client, final MessageHandler messageHandler) {
+        return new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
                 LOG.error("connection lost", cause);
@@ -68,7 +69,7 @@ public class MqttService {
                     if(!topic.contains("status")) {
                         LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
-                        handleRoadMessage(message, config.getOption(topic));
+                        messageHandler.handleMessage(message, configMap.get(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -79,10 +80,17 @@ public class MqttService {
             public void deliveryComplete(final IMqttDeliveryToken token) {
 
             }
-        });
+        };
+    }
+
+    private void createClient(final Map<String, Config.SensorConfig> configs, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
+        final String clientId = CLIENT_ID + UUID.randomUUID().toString();
+        final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
+
+        client.setCallback(createCallBack(configs, client, messageHandler));
         client.connect(setUpConnectionOptions());
 
-        config.getRoadTopics().forEach(topic -> {
+        configs.keySet().forEach(topic -> {
             try {
                 LOG.info("subscribing to {}", topic);
                 client.subscribe(topic);
@@ -91,20 +99,36 @@ public class MqttService {
             }
         });
 
-        client.subscribe("weather/status");
+        client.subscribe(serverConfig.statusTopic);
 
-        LOG.info("Starting mqtt client");
+        LOG.info("Starting mqtt client " + serverConfig.serverAddress);
     }
 
-    private void handleRoadMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) throws IOException {
-        final String unitOfMeasurement = sensorConfig.unitOfMeasurement;
-        final MqttData wd = gson.fromJson(new String(message.getPayload()), MqttData.class);
-        final String value = wd.sensorValue;
+    private void handleRoadMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) {
+        final MqttSensorValue wd = gson.fromJson(new String(message.getPayload()), MqttSensorValue.class);
 
-        final int httpCode = sensorValueService.postSensorValue(sensorConfig.sensorName, value, unitOfMeasurement);
+        postSensorValue(sensorConfig.sensorName, wd.sensorValue, sensorConfig.unitOfMeasurement);
+    }
 
-        if(httpCode != HTTP_OK) {
-            LOG.error("post sensor value returned {}", httpCode);
+    private void handleSseMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) {
+        final JsonParser parser = new JsonParser();
+        final JsonObject root = parser.parse(new String(message.getPayload())).getAsJsonObject();
+
+        final JsonObject properties = root.getAsJsonObject("properties");
+        final String value = properties.get(sensorConfig.propertyName).getAsString();
+
+        postSensorValue(sensorConfig.sensorName, value, sensorConfig.unitOfMeasurement);
+    }
+
+    private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
+        try {
+            final int httpCode = 1;//sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
+
+            if(httpCode != HTTP_OK) {
+                LOG.error("post sensor value returned {}", httpCode);
+            }
+        } catch(final Exception e) {
+            LOG.error("exception from post", e);
         }
     }
 

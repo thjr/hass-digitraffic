@@ -7,9 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Component
 public class MqttConfigService {
     private final ConfigService configService;
@@ -36,10 +33,16 @@ public class MqttConfigService {
     }
 
     private boolean validateConfig(final MqttConfig mqttConfig) {
-        final boolean notValid = mqttConfig.getOptions().stream().anyMatch(this::isTopicInvalid);
+        boolean notValid = false;
 
-        if(notValid) {
+        if(mqttConfig.getOptions().stream().anyMatch(this::isTopicInvalid)) {
+            notValid = true;
             LOG.error("wildchars are forbidden!");
+        }
+
+        if(mqttConfig.getRoadConfigs().isEmpty() && mqttConfig.getSseConfigs().isEmpty()) {
+            notValid = true;
+            LOG.error("no topics configured!");
         }
 
         return !notValid;

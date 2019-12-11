@@ -18,27 +18,27 @@ And the install the add-on.
 Configuration
 -------------
 
-Currently supported sensors: WEATHER and TMS.  
+Currently supported are road sensors.
 Find your weather-station from https://tie.digitraffic.fi/api/v3/metadata/weather-stations
 Find your weather-sensor from https://tie.digitraffic.fi/api/v3/metadata/weather-sensors
 Find your tms-station from https://tie.digitraffic.fi/api/v3/metadata/tms-stations
 Find your tms-sensor from https://tie.digitraffic.fi/api/v3/metadata/tms-sensors
 
-Mqttpath is {stationId}/{sensorId}
+Mqttpath is {sensor type]/{stationId}/{sensorId}
 
 ```json
 {
   "sensors": [
     {
       "sensorName": "paasikiventie_temperature",
-      "mqttPath": "4057/3",
-      "sensorType": "WEATHER",
+      "mqttPath": "weather/4057/3",
+      "sensorType": "ROAD",
       "unitOfMeasurement": "°C"
     },
     {
       "sensorName": "paasikiventie_speed",
-      "mqttPath": "23438/5122",
-      "sensorType": "TMS",
+      "mqttPath": "tms/23438/5122",
+      "sensorType": "ROAD",
       "unitOfMeasurement": "km/h"
     }
   ]

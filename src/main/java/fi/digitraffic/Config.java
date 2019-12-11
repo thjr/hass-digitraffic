@@ -10,6 +10,7 @@ public class Config {
         public SensorType sensorType;
         public String mqttPath;
         public String unitOfMeasurement;
+        public String propertyName;
     }
 
     public enum SensorType {
