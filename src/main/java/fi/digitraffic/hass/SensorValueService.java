@@ -9,9 +9,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component
@@ -28,7 +26,7 @@ public class SensorValueService {
 
     public int postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) throws IOException {
         final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASSIO_ADDRESS, sensorName));
-        final Map attributes = new HashMap();
+        final Map<String, String> attributes = new HashMap<>();
         final HassStateData data = new HassStateData(value, attributes);
         attributes.put("unit_of_measurement", unitOfMeasurement);
 

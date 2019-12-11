@@ -9,9 +9,9 @@ public class ServerConfig {
     public static final String CLIENT_ID = "hass-digitraffic-";
 
     public static final ServerConfig ROAD = new ServerConfig("wss://tie.digitraffic.fi:61619/mqtt", "tms/status");
-    public static final ServerConfig MARINE = new ServerConfig("wss://meri.digitraffic.fi:61619/mqtt", "vessels/status");
+    public static final ServerConfig MARINE = new ServerConfig("wss://meri.digitraffic.fi:61619/mqtt", "sse/status");
 
-    public ServerConfig(String serverAddress, String statusTopic) {
+    public ServerConfig(final String serverAddress, final String statusTopic) {
         this.serverAddress = serverAddress;
         this.statusTopic = statusTopic;
     }

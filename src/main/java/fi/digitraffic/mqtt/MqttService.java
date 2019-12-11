@@ -3,14 +3,13 @@ package fi.digitraffic.mqtt;
 import com.google.gson.*;
 import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
-import fi.digitraffic.mqtt.model.MqttSensorValue;
 import fi.digitraffic.mqtt.model.MqttConfig;
+import fi.digitraffic.mqtt.model.MqttSensorValue;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -39,16 +38,16 @@ public class MqttService {
 
         if(options != null) {
             if(!options.getRoadConfigs().isEmpty()) {
-                createClient(options.getRoadConfigs(), ServerConfig.ROAD, (message, config) -> handleRoadMessage(message, config));
+                createClient(options.getRoadConfigs(), ServerConfig.ROAD, this::handleRoadMessage);
             }
             if(!options.getSseConfigs().isEmpty()) {
-                createClient(options.getSseConfigs(), ServerConfig.MARINE, (message, config) -> handleSseMessage(message, config));
+                createClient(options.getSseConfigs(), ServerConfig.MARINE, this::handleSseMessage);
             }
         }
     }
 
     private interface MessageHandler {
-        void handleMessage(final MqttMessage message, final Config.SensorConfig config) throws IOException;
+        void handleMessage(final MqttMessage message, final Config.SensorConfig config);
     }
 
     private MqttCallback createCallBack(final Map<String, Config.SensorConfig> configMap, final IMqttClient client, final MessageHandler messageHandler) {
