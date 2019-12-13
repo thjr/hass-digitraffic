@@ -131,7 +131,7 @@ public class MqttService {
         final String latitude = coordinates.get(0).getAsString();
         final String longitude = coordinates.get(1).getAsString();
 
-        postLocation(sensorConfig.propertyName, latitude, longitude);
+        postLocation(sensorConfig.sensorName, latitude, longitude);
     }
 
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {

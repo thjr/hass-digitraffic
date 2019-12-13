@@ -37,7 +37,7 @@ public class SensorValueService {
     }
 
     public int postLocation(final String entityName, final String latitude, final String longitude) throws IOException {
-        final URL url = new URL(String.format("http://%s/api/states/entity.%s", HASSIO_ADDRESS, entityName));
+        final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASSIO_ADDRESS, entityName));
         final Map<String, String> attributes = new HashMap<>();
         final HassLocation data = new HassLocation(attributes);
         attributes.put("latitude", latitude);
