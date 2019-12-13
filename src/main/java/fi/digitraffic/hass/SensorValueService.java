@@ -39,7 +39,7 @@ public class SensorValueService {
     public int postLocation(final String entityName, final String latitude, final String longitude) throws IOException {
         final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASSIO_ADDRESS, entityName));
         final Map<String, String> attributes = new HashMap<>();
-        final HassLocation data = new HassLocation(attributes);
+        final HassStateData data = new HassStateData("on", attributes);
         attributes.put("latitude", latitude);
         attributes.put("longitude", longitude);
 
@@ -69,14 +69,6 @@ public class SensorValueService {
 
         private HassStateData(final Object state, final Map<String, String> attributes) {
             this.state = state;
-            this.attributes = attributes;
-        }
-    }
-
-    private static class HassLocation {
-        final Map<String, String> attributes;
-
-        private HassLocation(final Map<String, String> attributes) {
             this.attributes = attributes;
         }
     }
