@@ -60,8 +60,7 @@ public class SensorValueService {
         con.getOutputStream().write(message.getBytes());
         con.connect();
 
-        return 1;
-        //return con.getResponseCode();
+        return con.getResponseCode();
     }
 
     private static class HassStateData {
