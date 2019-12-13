@@ -40,7 +40,7 @@ public class MqttConfigService {
             LOG.error("wildchars are forbidden!");
         }
 
-        if(mqttConfig.getRoadConfigs().isEmpty() && mqttConfig.getSseConfigs().isEmpty()) {
+        if(mqttConfig.getRoadConfigs().isEmpty() && mqttConfig.getSseConfigs().isEmpty() && mqttConfig.getVesselLocationConfigs().isEmpty()) {
             notValid = true;
             LOG.error("no topics configured!");
         }

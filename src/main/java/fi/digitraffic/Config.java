@@ -14,6 +14,6 @@ public class Config {
     }
 
     public enum SensorType {
-        ROAD, VESSEL, SSE
+        ROAD, VESSEL_LOCATION, SSE
     }
 }

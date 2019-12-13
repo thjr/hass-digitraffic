@@ -23,7 +23,7 @@
         },
         "schema": {
                 "sensors": [
-                        { "sensorName": "str", "mqttPath":  "str", "sensorType": "str", "unitOfMeasurement":  "str", "propertyName":  "str"}
+                        { "sensorName": "str", "mqttPath":  "str", "sensorType": "str", "unitOfMeasurement":  "str", "propertyName":  "str?"}
                 ]
         },
         "homeassistant_api": true,

@@ -25,6 +25,10 @@ public class MqttConfig {
         return getTopics(Config.SensorType.SSE);
     }
 
+    public Map<String, Config.SensorConfig> getVesselLocationConfigs() {
+        return getTopics(Config.SensorType.VESSEL_LOCATION);
+    }
+
     private Map<String, Config.SensorConfig> getTopics(final Config.SensorType sensorType) {
         return optionsMap.values().stream().filter(s -> s.sensorType == sensorType).collect(Collectors.toMap(c -> c.mqttPath, c -> c));
     }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +31,25 @@ public class SensorValueService {
         final HassStateData data = new HassStateData(value, attributes);
         attributes.put("unit_of_measurement", unitOfMeasurement);
 
-        final HttpURLConnection con = (HttpURLConnection) url.openConnection();
         final String message = gson.toJson(data);
+
+        return post(url, message);
+    }
+
+    public int postLocation(final String entityName, final String latitude, final String longitude) throws IOException {
+        final URL url = new URL(String.format("http://%s/api/states/entity.%s", HASSIO_ADDRESS, entityName));
+        final Map<String, String> attributes = new HashMap<>();
+        final HassLocation data = new HassLocation(attributes);
+        attributes.put("latitude", latitude);
+        attributes.put("longitude", longitude);
+
+        final String message = gson.toJson(data);
+
+        return post(url, message);
+    }
+
+    private int post(final URL url, final String message) throws IOException {
+        final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
         LOG.info("posting {} to {}", message, url.getPath());
 
@@ -42,7 +60,8 @@ public class SensorValueService {
         con.getOutputStream().write(message.getBytes());
         con.connect();
 
-        return con.getResponseCode();
+        return 1;
+        //return con.getResponseCode();
     }
 
     private static class HassStateData {
@@ -51,6 +70,14 @@ public class SensorValueService {
 
         private HassStateData(final Object state, final Map<String, String> attributes) {
             this.state = state;
+            this.attributes = attributes;
+        }
+    }
+
+    private static class HassLocation {
+        final Map<String, String> attributes;
+
+        private HassLocation(final Map<String, String> attributes) {
             this.attributes = attributes;
         }
     }

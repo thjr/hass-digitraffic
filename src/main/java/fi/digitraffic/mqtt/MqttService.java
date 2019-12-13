@@ -43,11 +43,14 @@ public class MqttService {
             if(!options.getSseConfigs().isEmpty()) {
                 createClient(options.getSseConfigs(), ServerConfig.MARINE, this::handleSseMessage);
             }
+            if(!options.getVesselLocationConfigs().isEmpty()) {
+                createClient(options.getVesselLocationConfigs(), ServerConfig.MARINE, this::handleVesselLocationMessage);
+            }
         }
     }
 
     private interface MessageHandler {
-        void handleMessage(final MqttMessage message, final Config.SensorConfig config);
+        void handleMessage(final String message, final Config.SensorConfig config);
     }
 
     private MqttCallback createCallBack(final Map<String, Config.SensorConfig> configMap, final IMqttClient client, final MessageHandler messageHandler) {
@@ -68,7 +71,7 @@ public class MqttService {
                     if(!topic.contains("status")) {
                         LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
 
-                        messageHandler.handleMessage(message, configMap.get(topic));
+                        messageHandler.handleMessage(message.toString(), configMap.get(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -103,15 +106,15 @@ public class MqttService {
         LOG.info("Starting mqtt client " + serverConfig.serverAddress);
     }
 
-    private void handleRoadMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) {
-        final MqttSensorValue wd = gson.fromJson(new String(message.getPayload()), MqttSensorValue.class);
+    private void handleRoadMessage(final String message, final Config.SensorConfig sensorConfig) {
+        final MqttSensorValue wd = gson.fromJson(message, MqttSensorValue.class);
 
         postSensorValue(sensorConfig.sensorName, wd.sensorValue, sensorConfig.unitOfMeasurement);
     }
 
-    private void handleSseMessage(final MqttMessage message, final Config.SensorConfig sensorConfig) {
+    private void handleSseMessage(final String message, final Config.SensorConfig sensorConfig) {
         final JsonParser parser = new JsonParser();
-        final JsonObject root = parser.parse(new String(message.getPayload())).getAsJsonObject();
+        final JsonObject root = parser.parse(message).getAsJsonObject();
 
         final JsonObject properties = root.getAsJsonObject("properties");
         final String value = properties.get(sensorConfig.propertyName).getAsString();
@@ -119,9 +122,33 @@ public class MqttService {
         postSensorValue(sensorConfig.sensorName, value, sensorConfig.unitOfMeasurement);
     }
 
+    private void handleVesselLocationMessage(final String message, final Config.SensorConfig sensorConfig) {
+        final JsonParser parser = new JsonParser();
+        final JsonObject root = parser.parse(message).getAsJsonObject();
+
+        final JsonObject geometry = root.getAsJsonObject("geometry");
+        final JsonArray coordinates = geometry.getAsJsonArray("coordinates");
+        final String latitude = coordinates.get(0).getAsString();
+        final String longitude = coordinates.get(1).getAsString();
+
+        postLocation(sensorConfig.propertyName, latitude, longitude);
+    }
+
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
         try {
             final int httpCode = sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
+
+            if(httpCode != HTTP_OK) {
+                LOG.error("post sensor value returned {}", httpCode);
+            }
+        } catch(final Exception e) {
+            LOG.error("exception from post", e);
+        }
+    }
+
+    private void postLocation(final String entityName, final String latitude, final String longitude) {
+        try {
+            final int httpCode = sensorValueService.postLocation(entityName, latitude, longitude);
 
             if(httpCode != HTTP_OK) {
                 LOG.error("post sensor value returned {}", httpCode);
