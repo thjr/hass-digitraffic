@@ -128,8 +128,8 @@ public class MqttService {
 
         final JsonObject geometry = root.getAsJsonObject("geometry");
         final JsonArray coordinates = geometry.getAsJsonArray("coordinates");
-        final String latitude = coordinates.get(0).getAsString();
-        final String longitude = coordinates.get(1).getAsString();
+        final String longitude = coordinates.get(0).getAsString();
+        final String latitude = coordinates.get(1).getAsString();
 
         postLocation(sensorConfig.sensorName, latitude, longitude);
     }
