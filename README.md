@@ -18,13 +18,9 @@ And the install the add-on.
 Configuration
 -------------
 
-Currently supported are road sensors.
-Find your weather-station from https://tie.digitraffic.fi/api/v3/metadata/weather-stations
-Find your weather-sensor from https://tie.digitraffic.fi/api/v3/metadata/weather-sensors
-Find your tms-station from https://tie.digitraffic.fi/api/v3/metadata/tms-stations
-Find your tms-sensor from https://tie.digitraffic.fi/api/v3/metadata/tms-sensors
+Currently supported are weather/tms-sensors, sse-attributes and ais-locations.
 
-Mqttpath is {sensor type]/{stationId}/{sensorId}
+Example configuration, with all supported sensors configured:
 
 ```json
 {
@@ -40,6 +36,18 @@ Mqttpath is {sensor type]/{stationId}/{sensorId}
       "mqttPath": "tms/23438/5122",
       "sensorType": "ROAD",
       "unitOfMeasurement": "km/h"
+    },
+    {
+      "sensorName": "kelloniemi_temperature",
+      "mqttPath": "sse/site/8659",
+      "sensorType": "SSE",
+      "unitOfMeasurement": "°C",
+      "propertyName": "temperature"
+    },
+    {
+      "sensorName": "ais_test",
+      "mqttPath": "vessels/308803000/locations",
+      "sensorType": "VESSEL_LOCATION"
     }
   ]
 }

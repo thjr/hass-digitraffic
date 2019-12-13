@@ -1,6 +1,6 @@
 {
         "name": "Digitraffic",
-        "version": "dev1",
+        "version": "1.0",
         "description": "Import data from Digitraffic",
         "slug": "hass_digitraffic",
         "arch": [
@@ -23,7 +23,7 @@
         },
         "schema": {
                 "sensors": [
-                        { "sensorName": "str", "mqttPath":  "str", "sensorType": "str", "unitOfMeasurement":  "str", "propertyName":  "str?"}
+                        { "sensorName": "str", "mqttPath":  "str", "sensorType": "str", "unitOfMeasurement":  "str?", "propertyName":  "str?"}
                 ]
         },
         "homeassistant_api": true,
