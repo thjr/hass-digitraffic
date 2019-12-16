@@ -130,7 +130,12 @@ public class MqttService {
         final String longitude = coordinates.get(0).getAsString();
         final String latitude = coordinates.get(1).getAsString();
 
-        postLocation(sensorConfig.sensorName, latitude, longitude);
+        final JsonObject properties = root.getAsJsonObject("properties");
+        final String navStat = properties.get("navStat").getAsString();
+        final String heading = properties.get("heading").getAsString();
+        final String sog = properties.get("sog").getAsString();
+
+        postLocation(sensorConfig.sensorName, latitude, longitude, navStat, heading, sog);
     }
 
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
@@ -145,9 +150,10 @@ public class MqttService {
         }
     }
 
-    private void postLocation(final String entityName, final String latitude, final String longitude) {
+    private void postLocation(final String entityName, final String latitude, final String longitude,
+                              final String navStat, final String heading, final String sog) {
         try {
-            final int httpCode = sensorValueService.postLocation(entityName, latitude, longitude);
+            final int httpCode = sensorValueService.postLocation(entityName, latitude, longitude, navStat, heading, sog);
 
             if(httpCode != HTTP_OK) {
                 LOG.error("post sensor value returned {}", httpCode);

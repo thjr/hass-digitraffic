@@ -36,12 +36,14 @@ public class SensorValueService {
         return post(url, message);
     }
 
-    public int postLocation(final String entityName, final String latitude, final String longitude) throws IOException {
+    public int postLocation(final String entityName, final String latitude, final String longitude, String navStat, String heading, String sog) throws IOException {
         final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASSIO_ADDRESS, entityName));
         final Map<String, String> attributes = new HashMap<>();
-        final HassStateData data = new HassStateData("on", attributes);
+        final HassStateData data = new HassStateData(navStat, attributes);
         attributes.put("latitude", latitude);
         attributes.put("longitude", longitude);
+        attributes.put("heading", heading);
+        attributes.put("sog", sog);
 
         final String message = gson.toJson(data);
 
