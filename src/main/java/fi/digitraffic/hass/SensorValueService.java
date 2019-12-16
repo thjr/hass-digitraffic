@@ -51,7 +51,7 @@ public class SensorValueService {
     private int post(final URL url, final String message) throws IOException {
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
-        LOG.info("posting {} to {}", message, url.getPath());
+//        LOG.info("posting {} to {}", message, url.getPath());
 
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("X-HA-Access", hassioToken);

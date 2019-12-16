@@ -59,7 +59,8 @@ public class MqttService {
             public void connectionLost(final Throwable cause) {
                 LOG.error("connection lost", cause);
                 try {
-                    client.reconnect();
+                    client.close();
+                    initialize();
                 } catch (final MqttException e) {
                     LOG.error("can't reconnect", e);
                 }
@@ -69,8 +70,6 @@ public class MqttService {
             public void messageArrived(final String topic, final MqttMessage message) {
                 try {
                     if(!topic.contains("status")) {
-                        LOG.info("topic {} got message {}", topic, new String(message.getPayload()));
-
                         messageHandler.handleMessage(message.toString(), configMap.get(topic));
                     }
                 } catch(final Exception e) {
