@@ -25,9 +25,18 @@ public class ConfigMap {
             return config;
         }
 
-        final String[] topicSplit = topic.split("/");
+        final String matchingKey = configMap.keySet().stream()
+                .filter(k -> keyMatches(topic, k))
+                .findFirst().orElse(null);
 
-        return topicSplit.length == 3 ? configMap.get(topicSplit[2]) : null;
+        return matchingKey == null ? null : configMap.get(matchingKey);
+    }
+
+    private boolean keyMatches(final String topic, final String key) {
+        final String[] topicSplit = topic.split("/");
+        final String[] keySplit = key.split("/");
+
+        return topicSplit.length == 3 && keySplit.length == 3 && topicSplit[2].equals(keySplit[2]);
     }
 
     public Set<String> keys() {

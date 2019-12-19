@@ -15,14 +15,6 @@ public class MqttConfig {
         this.optionsMap = config.sensors.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
     }
 
-    private String getMapKey(final Config.SensorConfig config) {
-        if(config.sensorType == Config.SensorType.TRAIN_GPS) {
-            return config.mqttPath.split("/")[2];
-        }
-
-        return config.mqttPath;
-    }
-
     public Collection<Config.SensorConfig> getOptions() {
         return optionsMap.values();
     }
@@ -46,7 +38,7 @@ public class MqttConfig {
     private ConfigMap getTopics(final Config.SensorType sensorType) {
         return new ConfigMap(optionsMap.values().stream()
                 .filter(s -> s.sensorType == sensorType)
-                .collect(Collectors.toMap(this::getMapKey, c -> c)));
+                .collect(Collectors.toMap(c -> c.mqttPath, c -> c)));
     }
 
     public boolean noTopics() {
