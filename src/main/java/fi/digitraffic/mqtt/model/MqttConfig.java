@@ -1,6 +1,8 @@
 package fi.digitraffic.mqtt.model;
 
 import fi.digitraffic.Config;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Map;
@@ -13,27 +15,41 @@ public class MqttConfig {
         this.optionsMap = config.sensors.stream().collect(Collectors.toMap(s -> s.mqttPath, s -> s));
     }
 
+    private String getMapKey(final Config.SensorConfig config) {
+        if(config.sensorType == Config.SensorType.TRAIN_GPS) {
+            return config.mqttPath.split("/")[2];
+        }
+
+        return config.mqttPath;
+    }
+
     public Collection<Config.SensorConfig> getOptions() {
         return optionsMap.values();
     }
 
-    public Map<String, Config.SensorConfig> getRoadConfigs() {
+    public ConfigMap getRoadConfigs() {
         return getTopics(Config.SensorType.ROAD);
     }
 
-    public Map<String, Config.SensorConfig> getSseConfigs() {
+    public ConfigMap getSseConfigs() {
         return getTopics(Config.SensorType.SSE);
     }
 
-    public Map<String, Config.SensorConfig> getVesselLocationConfigs() {
+    public ConfigMap getVesselLocationConfigs() {
         return getTopics(Config.SensorType.VESSEL_LOCATION);
     }
 
-    public Map<String, Config.SensorConfig> getTrainGpsConfigs() {
+    public ConfigMap getTrainGpsConfigs() {
         return getTopics(Config.SensorType.TRAIN_GPS);
     }
 
-    private Map<String, Config.SensorConfig> getTopics(final Config.SensorType sensorType) {
-        return optionsMap.values().stream().filter(s -> s.sensorType == sensorType).collect(Collectors.toMap(c -> c.mqttPath, c -> c));
+    private ConfigMap getTopics(final Config.SensorType sensorType) {
+        return new ConfigMap(optionsMap.values().stream()
+                .filter(s -> s.sensorType == sensorType)
+                .collect(Collectors.toMap(this::getMapKey, c -> c)));
+    }
+
+    public boolean noTopics() {
+        return optionsMap.isEmpty();
     }
 }

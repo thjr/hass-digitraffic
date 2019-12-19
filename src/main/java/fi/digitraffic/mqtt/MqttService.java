@@ -3,6 +3,7 @@ package fi.digitraffic.mqtt;
 import com.google.gson.*;
 import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
+import fi.digitraffic.mqtt.model.ConfigMap;
 import fi.digitraffic.mqtt.model.MqttConfig;
 import fi.digitraffic.mqtt.model.MqttSensorValue;
 import org.eclipse.paho.client.mqttv3.*;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.ZonedDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 import static fi.digitraffic.mqtt.ServerConfig.*;
@@ -57,7 +57,7 @@ public class MqttService {
         void handleMessage(final String message, final Config.SensorConfig config);
     }
 
-    private MqttCallback createCallBack(final Map<String, Config.SensorConfig> configMap, final IMqttClient client, final MessageHandler messageHandler) {
+    private MqttCallback createCallBack(final ConfigMap configMap, final IMqttClient client, final MessageHandler messageHandler) {
         return new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
@@ -74,7 +74,7 @@ public class MqttService {
             public void messageArrived(final String topic, final MqttMessage message) {
                 try {
                     if(!topic.contains("status")) {
-                        messageHandler.handleMessage(message.toString(), configMap.get(topic));
+                        messageHandler.handleMessage(message.toString(), configMap.getConfigForTopic(topic));
                     }
                 } catch(final Exception e) {
                     LOG.error("error", e);
@@ -88,14 +88,14 @@ public class MqttService {
         };
     }
 
-    private void createClient(final Map<String, Config.SensorConfig> configs, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
+    private void createClient(final ConfigMap configMap, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
 
-        client.setCallback(createCallBack(configs, client, messageHandler));
+        client.setCallback(createCallBack(configMap, client, messageHandler));
         client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
-        configs.keySet().forEach(topic -> {
+        configMap.keys().forEach(topic -> {
             try {
                 LOG.info("subscribing to {}", topic);
                 client.subscribe(topic);
