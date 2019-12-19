@@ -40,7 +40,8 @@ public class MqttConfigService {
             LOG.error("wildchars are forbidden!");
         }
 
-        if(mqttConfig.getRoadConfigs().isEmpty() && mqttConfig.getSseConfigs().isEmpty() && mqttConfig.getVesselLocationConfigs().isEmpty()) {
+        if(mqttConfig.getRoadConfigs().isEmpty() && mqttConfig.getSseConfigs().isEmpty() &&
+                mqttConfig.getVesselLocationConfigs().isEmpty() && mqttConfig.getTrainGpsConfigs().isEmpty()) {
             notValid = true;
             LOG.error("no topics configured!");
         }
@@ -49,6 +50,6 @@ public class MqttConfigService {
     }
 
     private boolean isTopicInvalid(final Config.SensorConfig option) {
-        return option.mqttPath.contains("%") || option.mqttPath.contains("*");
+        return (option.sensorType != Config.SensorType.TRAIN_GPS && option.mqttPath.contains("+")) || option.mqttPath.contains("#");
     }
 }

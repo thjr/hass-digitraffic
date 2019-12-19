@@ -9,6 +9,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -45,6 +46,9 @@ public class MqttService {
             }
             if(!options.getVesselLocationConfigs().isEmpty()) {
                 createClient(options.getVesselLocationConfigs(), ServerConfig.MARINE, this::handleVesselLocationMessage);
+            }
+            if(!options.getTrainGpsConfigs().isEmpty()) {
+                createClient(options.getTrainGpsConfigs(), RAIL, this::handleTrainGpsMessage);
             }
         }
     }
@@ -89,7 +93,7 @@ public class MqttService {
         final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
 
         client.setCallback(createCallBack(configs, client, messageHandler));
-        client.connect(setUpConnectionOptions());
+        client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
         configs.keySet().forEach(topic -> {
             try {
@@ -100,7 +104,9 @@ public class MqttService {
             }
         });
 
-        client.subscribe(serverConfig.statusTopic);
+        if(!StringUtils.isEmpty(serverConfig.statusTopic)) {
+            client.subscribe(serverConfig.statusTopic);
+        }
 
         LOG.info("Starting mqtt client " + serverConfig.serverAddress);
     }
@@ -138,6 +144,20 @@ public class MqttService {
         postLocation(sensorConfig.sensorName, latitude, longitude, navStat, heading, sog);
     }
 
+    private void handleTrainGpsMessage(final String message, final Config.SensorConfig config) {
+        final JsonParser parser = new JsonParser();
+        final JsonObject root = parser.parse(message).getAsJsonObject();
+
+        final JsonObject location = root.getAsJsonObject("location");
+        final JsonArray coordinates = location.getAsJsonArray("coordinates");
+        final String longitude = coordinates.get(0).getAsString();
+        final String latitude = coordinates.get(1).getAsString();
+
+        final String speed = root.get("speed").getAsString();
+
+        postTrainGps(config.sensorName, latitude, longitude, speed);
+    }
+
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
         try {
             final int httpCode = sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
@@ -163,11 +183,28 @@ public class MqttService {
         }
     }
 
-    private static MqttConnectOptions setUpConnectionOptions() {
+    private void postTrainGps(final String entityName, final String latitude, final String longitude, final String speed) {
+        try {
+            final int httpCode = sensorValueService.postTrainGps(entityName, latitude, longitude, speed);
+
+            if(httpCode != HTTP_OK) {
+                LOG.error("post sensor value returned {}", httpCode);
+            }
+        } catch(final Exception e) {
+            LOG.error("exception from post", e);
+        }
+
+    }
+
+    private static MqttConnectOptions setUpConnectionOptions(final boolean needUsername) {
         final MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
-        connOpts.setUserName(USERNAME);
-        connOpts.setPassword(PASSWORD.toCharArray());
+
+        if(needUsername) {
+            connOpts.setUserName(USERNAME);
+            connOpts.setPassword(PASSWORD.toCharArray());
+        }
+
         return connOpts;
     }
 }

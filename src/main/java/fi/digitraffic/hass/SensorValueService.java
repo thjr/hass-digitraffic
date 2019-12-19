@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,9 +30,7 @@ public class SensorValueService {
         final HassStateData data = new HassStateData(value, attributes);
         attributes.put("unit_of_measurement", unitOfMeasurement);
 
-        final String message = gson.toJson(data);
-
-        return post(url, message);
+        return post(url, data);
     }
 
     public int postLocation(final String entityName, final String latitude, final String longitude, String navStat, String heading, String sog) throws IOException {
@@ -45,12 +42,22 @@ public class SensorValueService {
         attributes.put("heading", heading);
         attributes.put("sog", sog);
 
-        final String message = gson.toJson(data);
-
-        return post(url, message);
+        return post(url, data);
     }
 
-    private int post(final URL url, final String message) throws IOException {
+    public int postTrainGps(final String entityName, final String latitude, final String longitude, final String speed) throws IOException {
+        final URL url = new URL(String.format("http://%s/api/states/sensor.%s", HASSIO_ADDRESS, entityName));
+        final Map<String, String> attributes = new HashMap<>();
+        final HassStateData data = new HassStateData("OK", attributes);
+        attributes.put("latitude", latitude);
+        attributes.put("longitude", longitude);
+        attributes.put("speed", speed);
+
+        return post(url, data);
+    }
+
+    private int post(final URL url, final HassStateData data) throws IOException {
+        final String message = gson.toJson(data);
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
 //        LOG.info("posting {} to {}", message, url.getPath());
