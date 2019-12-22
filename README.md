@@ -18,7 +18,7 @@ And the install the add-on.
 Configuration
 -------------
 
-Currently supported are weather/tms-sensors, sse-attributes and ais-locations.
+Currently supported are weather/tms-sensors, sse-attributes, ais-locations and train-locations.
 
 Example configuration, with all supported sensors configured:
 
@@ -48,6 +48,11 @@ Example configuration, with all supported sensors configured:
       "sensorName": "ais_test",
       "mqttPath": "vessels/308803000/locations",
       "sensorType": "VESSEL_LOCATION"
+    },
+    {
+      "sensorName": "train_test",
+      "mqttPath": "train-locations/+/29",
+      "sensorType": "TRAIN_GPS"
     }
   ]
 }
