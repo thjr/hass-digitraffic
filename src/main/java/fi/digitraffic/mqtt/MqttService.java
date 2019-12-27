@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static fi.digitraffic.mqtt.ServerConfig.*;
@@ -27,6 +29,8 @@ public class MqttService {
     private final SensorValueService sensorValueService;
     private final MqttConfigService mqttConfigService;
 
+    private final List<IMqttClient> clientList = new ArrayList();
+
     public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
         this.sensorValueService = sensorValueService;
         this.mqttConfigService = mqttConfigService;
@@ -39,31 +43,43 @@ public class MqttService {
 
         if(options != null) {
             if(!options.getRoadConfigs().isEmpty()) {
-                createClient(options.getRoadConfigs(), ServerConfig.ROAD, this::handleRoadMessage);
+                clientList.add(createClient(options.getRoadConfigs(), ServerConfig.ROAD, this::handleRoadMessage));
             }
             if(!options.getSseConfigs().isEmpty()) {
-                createClient(options.getSseConfigs(), ServerConfig.MARINE, this::handleSseMessage);
+                clientList.add(createClient(options.getSseConfigs(), ServerConfig.MARINE, this::handleSseMessage));
             }
             if(!options.getVesselLocationConfigs().isEmpty()) {
-                createClient(options.getVesselLocationConfigs(), ServerConfig.MARINE, this::handleVesselLocationMessage);
+                clientList.add(createClient(options.getVesselLocationConfigs(), ServerConfig.MARINE, this::handleVesselLocationMessage));
             }
             if(!options.getTrainGpsConfigs().isEmpty()) {
-                createClient(options.getTrainGpsConfigs(), RAIL, this::handleTrainGpsMessage);
+                clientList.add(createClient(options.getTrainGpsConfigs(), RAIL, this::handleTrainGpsMessage));
             }
         }
+    }
+
+    private void closeAllClients() {
+        for (final IMqttClient iMqttClient : clientList) {
+            try {
+                iMqttClient.close();
+            } catch(final Exception e) {
+                LOG.error("error when closing connection", e);
+            }
+        }
+
+        clientList.clear();
     }
 
     private interface MessageHandler {
         void handleMessage(final String message, final Config.SensorConfig config);
     }
 
-    private MqttCallback createCallBack(final ConfigMap configMap, final IMqttClient client, final MessageHandler messageHandler) {
+    private MqttCallback createCallBack(final ConfigMap configMap, final MessageHandler messageHandler) {
         return new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
                 LOG.error("connection lost", cause);
                 try {
-                    client.close();
+                    closeAllClients();
                     initialize();
                 } catch (final MqttException e) {
                     LOG.error("can't reconnect", e);
@@ -83,16 +99,16 @@ public class MqttService {
 
             @Override
             public void deliveryComplete(final IMqttDeliveryToken token) {
-
+                // Do nothing
             }
         };
     }
 
-    private void createClient(final ConfigMap configMap, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
+    private IMqttClient createClient(final ConfigMap configMap, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
 
-        client.setCallback(createCallBack(configMap, client, messageHandler));
+        client.setCallback(createCallBack(configMap, messageHandler));
         client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
         configMap.keys().forEach(topic -> {
@@ -109,6 +125,8 @@ public class MqttService {
         }
 
         LOG.info("Starting mqtt client " + serverConfig.serverAddress);
+
+        return client;
     }
 
     private void handleRoadMessage(final String message, final Config.SensorConfig sensorConfig) {
