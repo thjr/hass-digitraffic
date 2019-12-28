@@ -35,10 +35,10 @@ public class MqttService {
         this.sensorValueService = sensorValueService;
         this.mqttConfigService = mqttConfigService;
 
-        initialize();
+        initializeAllClients();
     }
 
-    private void initialize() throws MqttException {
+    private void initializeAllClients() throws MqttException {
         final MqttConfig options = mqttConfigService.readAndValidate();
 
         if(options != null) {
@@ -60,6 +60,7 @@ public class MqttService {
     private void closeAllClients() {
         for (final IMqttClient iMqttClient : clientList) {
             try {
+                iMqttClient.disconnectForcibly();
                 iMqttClient.close();
             } catch(final Exception e) {
                 LOG.error("error when closing connection", e);
@@ -73,14 +74,27 @@ public class MqttService {
         void handleMessage(final String message, final Config.SensorConfig config);
     }
 
-    private MqttCallback createCallBack(final ConfigMap configMap, final MessageHandler messageHandler) {
+    private boolean reconnect(final IMqttClient client) {
+        try {
+            client.reconnect();
+        } catch (final MqttException e) {
+            LOG.error("reconnect failed");
+            return false;
+        }
+
+        return true;
+    }
+
+    private MqttCallback createCallBack(final ConfigMap configMap, IMqttClient client, final MessageHandler messageHandler) {
         return new MqttCallback() {
             @Override
             public void connectionLost(final Throwable cause) {
                 LOG.error("connection lost", cause);
                 try {
-                    closeAllClients();
-                    initialize();
+                    if(!reconnect(client)) {
+                        closeAllClients();
+                        initializeAllClients();
+                    }
                 } catch (final MqttException e) {
                     LOG.error("can't reconnect", e);
                 }
@@ -108,7 +122,7 @@ public class MqttService {
         final String clientId = CLIENT_ID + UUID.randomUUID().toString();
         final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
 
-        client.setCallback(createCallBack(configMap, messageHandler));
+        client.setCallback(createCallBack(configMap, client, messageHandler));
         client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
         configMap.keys().forEach(topic -> {
