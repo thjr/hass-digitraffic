@@ -30,6 +30,7 @@ public class MqttService {
     private final MqttConfigService mqttConfigService;
 
     private final List<IMqttClient> clientList = new ArrayList();
+    private final SensorValueCache sensorValueCache = new SensorValueCache();
 
     public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
         this.sensorValueService = sensorValueService;
@@ -146,7 +147,10 @@ public class MqttService {
     private void handleRoadMessage(final String message, final Config.SensorConfig sensorConfig) {
         final MqttSensorValue wd = gson.fromJson(message, MqttSensorValue.class);
 
-        postSensorValue(sensorConfig.sensorName, wd.sensorValue, sensorConfig.unitOfMeasurement);
+        // only send changes or once a minute
+        if(sensorValueCache.updateValue(sensorConfig.sensorName, wd.sensorValue)) {
+            postSensorValue(sensorConfig.sensorName, wd.sensorValue, sensorConfig.unitOfMeasurement);
+        }
     }
 
     private void handleSseMessage(final String message, final Config.SensorConfig sensorConfig) {
