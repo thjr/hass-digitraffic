@@ -21,7 +21,7 @@ public class SensorValueCache {
     }
 
     public boolean checkTime(final String key) {
-        return checkTimeAndValue(key, null);
+        return checkTimeAndValue(key, "");
     }
 
     public synchronized boolean checkTimeAndValue(final String key, final String value) {
