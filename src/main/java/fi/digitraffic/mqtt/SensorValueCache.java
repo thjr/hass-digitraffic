@@ -8,8 +8,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SensorValueCache {
     private final Map<String, CacheValue> map = new ConcurrentHashMap<>();
 
-    private static final Duration MAX_TIME_BETWEEN = Duration.ofMinutes(1);
-    private static final Duration MIN_TIME_BETWEEN = Duration.ofSeconds(60);
+    private final Duration maxTime;
+    private final Duration minTime;
+
+    public SensorValueCache(final Duration minTime, final Duration maxTime) {
+        this.minTime = minTime;
+        this.maxTime = maxTime;
+    }
+
+    public SensorValueCache(final Duration minTime) {
+        this(minTime, minTime);
+    }
+
+    public boolean checkTime(final String key) {
+        return checkTimeAndValue(key, null);
+    }
 
     public synchronized boolean checkTimeAndValue(final String key, final String value) {
         final CacheValue cv = map.get(key);
@@ -24,25 +37,12 @@ public class SensorValueCache {
     }
 
     private boolean hasValueChanged(final CacheValue cv, final String value) {
-        return !cv.value.equals(value) && cv.timestamp.isBefore(ZonedDateTime.now().minus(MIN_TIME_BETWEEN));
+        return !cv.value.equals(value) && cv.timestamp.isBefore(ZonedDateTime.now().minus(minTime));
     }
 
     private boolean isMaxTime(final CacheValue cv) {
-        return cv.timestamp.isBefore(ZonedDateTime.now().minus(MAX_TIME_BETWEEN));
+        return cv.timestamp.isBefore(ZonedDateTime.now().minus(maxTime));
     }
-
-    public synchronized boolean checkTime(final String key) {
-        final CacheValue cv = map.get(key);
-
-        if(cv == null || isMaxTime(cv)) {
-            map.put(key, new CacheValue(null, ZonedDateTime.now()));
-
-            return true;
-        }
-
-        return false;
-    }
-
 
     private class CacheValue {
         public final String value;

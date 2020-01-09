@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +31,8 @@ public class MqttService {
     private final MqttConfigService mqttConfigService;
 
     private final List<IMqttClient> clientList = new ArrayList();
-    private final SensorValueCache sensorValueCache = new SensorValueCache();
+    private final SensorValueCache sensorValueCache = new SensorValueCache(Duration.ofSeconds(60), Duration.ofMinutes(5)); // if value changes, change value every 60 seconds at max
+    private final SensorValueCache locationCache = new SensorValueCache(Duration.ofMinutes(1)); // change value once a minute, no matter what the value
 
     public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
         this.sensorValueService = sensorValueService;
@@ -182,7 +184,7 @@ public class MqttService {
         final String heading = properties.get("heading").getAsString();
         final String sog = properties.get("sog").getAsString();
 
-        if(sensorValueCache.checkTime(sensorConfig.sensorName)) {
+        if(locationCache.checkTime(sensorConfig.sensorName)) {
             postLocation(sensorConfig.sensorName, latitude, longitude, navStat, heading, sog);
         }
     }
@@ -198,7 +200,9 @@ public class MqttService {
 
         final String speed = root.get("speed").getAsString();
 
-        postTrainGps(config.sensorName, latitude, longitude, speed);
+        if(locationCache.checkTime(config.sensorName)) {
+            postTrainGps(config.sensorName, latitude, longitude, speed);
+        }
     }
 
     private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
