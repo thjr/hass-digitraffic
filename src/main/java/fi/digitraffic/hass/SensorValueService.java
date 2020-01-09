@@ -60,7 +60,7 @@ public class SensorValueService {
         final String message = gson.toJson(data);
         final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
-//        LOG.info("posting {} to {}", message, url.getPath());
+        LOG.info("posting to {}", url.getPath());
 
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("X-HA-Access", hassioToken);

@@ -153,7 +153,7 @@ public class MqttService {
         final MqttSensorValue wd = gson.fromJson(message, MqttSensorValue.class);
 
         // only send changes or once a minute
-        if(sensorValueCache.updateValue(sensorConfig.sensorName, wd.sensorValue)) {
+        if(sensorValueCache.checkTimeAndValue(sensorConfig.sensorName, wd.sensorValue)) {
             postSensorValue(sensorConfig.sensorName, wd.sensorValue, sensorConfig.unitOfMeasurement);
         }
     }
@@ -182,7 +182,9 @@ public class MqttService {
         final String heading = properties.get("heading").getAsString();
         final String sog = properties.get("sog").getAsString();
 
-        postLocation(sensorConfig.sensorName, latitude, longitude, navStat, heading, sog);
+        if(sensorValueCache.checkTime(sensorConfig.sensorName)) {
+            postLocation(sensorConfig.sensorName, latitude, longitude, navStat, heading, sog);
+        }
     }
 
     private void handleTrainGpsMessage(final String message, final Config.SensorConfig config) {
