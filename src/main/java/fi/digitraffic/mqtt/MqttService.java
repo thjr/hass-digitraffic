@@ -59,6 +59,8 @@ public class MqttService {
     }
 
     private void closeAllClients() {
+        LOG.info("Closing all clients");
+
         for (final IMqttClient iMqttClient : clientList) {
             try {
                 iMqttClient.disconnectForcibly();
@@ -78,12 +80,13 @@ public class MqttService {
     private boolean reconnect(final IMqttClient client) {
         try {
             client.reconnect();
+
+            return true;
         } catch (final MqttException e) {
             LOG.error("reconnect failed");
-            return false;
         }
 
-        return true;
+        return false;
     }
 
     private MqttCallback createCallBack(final ConfigMap configMap, IMqttClient client, final MessageHandler messageHandler) {
@@ -95,6 +98,8 @@ public class MqttService {
                     if(!reconnect(client)) {
                         closeAllClients();
                         initializeAllClients();
+                    } else {
+                        LOG.info("Reconnected?");
                     }
                 } catch (final MqttException e) {
                     LOG.error("can't reconnect", e);
