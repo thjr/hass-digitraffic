@@ -83,7 +83,7 @@ public class MqttService {
         try {
             client.reconnect();
 
-            return true;
+            return client.isConnected();
         } catch (final MqttException e) {
             LOG.error("reconnect failed");
         }
