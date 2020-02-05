@@ -23,7 +23,7 @@ public class SensorValueService {
     private final String hassioToken;
     private final Gson gson = new Gson();
 
-    public SensorValueService(@Value("${HASSIO_TOKEN}") final String token, @Value("${SKIP_WRITE}") final boolean skipWrite) {
+    public SensorValueService(@Value("${HASSIO_TOKEN}") final String token, @Value("${SKIP_WRITE:false}") final boolean skipWrite) {
         this.skipWrite = skipWrite;
         this.hassioToken = token;
     }
