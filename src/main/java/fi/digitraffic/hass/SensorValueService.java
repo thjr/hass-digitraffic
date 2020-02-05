@@ -12,15 +12,19 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.net.HttpURLConnection.HTTP_OK;
+
 @Component
 public class SensorValueService {
     private static final String HASSIO_ADDRESS = "hassio/homeassistant";
     private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
 
+    private final boolean skipWrite;
     private final String hassioToken;
     private final Gson gson = new Gson();
 
-    public SensorValueService(@Value("${HASSIO_TOKEN}") final String token) {
+    public SensorValueService(@Value("${HASSIO_TOKEN}") final String token, @Value("${SKIP_WRITE}") final boolean skipWrite) {
+        this.skipWrite = skipWrite;
         this.hassioToken = token;
     }
 
@@ -56,20 +60,35 @@ public class SensorValueService {
         return post(url, data);
     }
 
-    private int post(final URL url, final HassStateData data) throws IOException {
-        final String message = gson.toJson(data);
-        final HttpURLConnection con = (HttpURLConnection) url.openConnection();
-
+    private int post(final URL url, final HassStateData data) {
         LOG.info("posting to {}", url.getPath());
 
-        con.setRequestProperty("Content-Type", "application/json");
-        con.setRequestProperty("X-HA-Access", hassioToken);
-        con.setRequestMethod("POST");
-        con.setDoOutput(true);
-        con.getOutputStream().write(message.getBytes());
-        con.connect();
+        if(skipWrite) {
+            return 200;
+        }
+        try {
+            final String message = gson.toJson(data);
+            final HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
-        return con.getResponseCode();
+            con.setRequestProperty("Content-Type", "application/json");
+            con.setRequestProperty("X-HA-Access", hassioToken);
+            con.setRequestMethod("POST");
+            con.setDoOutput(true);
+            con.getOutputStream().write(message.getBytes());
+            con.connect();
+
+            final int httpCode = con.getResponseCode();
+
+            if(httpCode != HTTP_OK) {
+                LOG.error("Posting to {} returned {}", url.getPath(), httpCode);
+            }
+
+            return httpCode;
+        } catch(final Exception e) {
+            LOG.error("Exception posting to " + url.getPath(), e);
+
+            return -1;
+        }
     }
 
     private static class HassStateData {

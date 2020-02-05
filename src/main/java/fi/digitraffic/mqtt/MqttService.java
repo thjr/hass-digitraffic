@@ -3,23 +3,18 @@ package fi.digitraffic.mqtt;
 import com.google.gson.*;
 import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
-import fi.digitraffic.mqtt.model.ConfigMap;
 import fi.digitraffic.mqtt.model.MqttConfig;
 import fi.digitraffic.mqtt.model.MqttSensorValue;
-import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import static fi.digitraffic.mqtt.ServerConfig.*;
-import static java.net.HttpURLConnection.HTTP_OK;
 
 @Component
 public class MqttService {
@@ -30,7 +25,6 @@ public class MqttService {
     private final SensorValueService sensorValueService;
     private final MqttConfigService mqttConfigService;
 
-    private final List<IMqttClient> clientList = new ArrayList();
     private final SensorValueCache sensorValueCache = new SensorValueCache(Duration.ofSeconds(60), Duration.ofMinutes(5)); // if value changes, change value every 60 seconds at max
     private final SensorValueCache locationCache = new SensorValueCache(Duration.ofMinutes(1)); // change value once a minute, no matter what the value
 
@@ -46,109 +40,22 @@ public class MqttService {
 
         if(options != null) {
             if(!options.getRoadConfigs().isEmpty()) {
-                clientList.add(createClient(options.getRoadConfigs(), ServerConfig.ROAD, this::handleRoadMessage));
+                new DTMqttClient(ROAD, options.getRoadConfigs(), this::handleRoadMessage).connect();
             }
             if(!options.getSseConfigs().isEmpty()) {
-                clientList.add(createClient(options.getSseConfigs(), ServerConfig.MARINE, this::handleSseMessage));
+                new DTMqttClient(MARINE, options.getSseConfigs(), this::handleSseMessage).connect();
             }
             if(!options.getVesselLocationConfigs().isEmpty()) {
-                clientList.add(createClient(options.getVesselLocationConfigs(), ServerConfig.MARINE, this::handleVesselLocationMessage));
+                new DTMqttClient(MARINE, options.getVesselLocationConfigs(), this::handleVesselLocationMessage).connect();
             }
             if(!options.getTrainGpsConfigs().isEmpty()) {
-                clientList.add(createClient(options.getTrainGpsConfigs(), RAIL, this::handleTrainGpsMessage));
+                new DTMqttClient(RAIL, options.getTrainGpsConfigs(), this::handleTrainGpsMessage).connect();
             }
         }
     }
 
-    private void closeAllClients() {
-        LOG.info("Closing all clients");
-
-        for (final IMqttClient iMqttClient : clientList) {
-            try {
-                iMqttClient.disconnectForcibly();
-                iMqttClient.close();
-            } catch(final Exception e) {
-                LOG.error("error when closing connection", e);
-            }
-        }
-
-        clientList.clear();
-    }
-
-    private interface MessageHandler {
+    public interface MessageHandler {
         void handleMessage(final String message, final Config.SensorConfig config);
-    }
-
-    private boolean reconnect(final IMqttClient client) {
-        try {
-            client.reconnect();
-
-            return client.isConnected();
-        } catch (final MqttException e) {
-            LOG.error("reconnect failed");
-        }
-
-        return false;
-    }
-
-    private MqttCallback createCallBack(final ConfigMap configMap, IMqttClient client, final MessageHandler messageHandler) {
-        return new MqttCallback() {
-            @Override
-            public void connectionLost(final Throwable cause) {
-                LOG.error("connection lost", cause);
-                try {
-                    if(!reconnect(client)) {
-                        closeAllClients();
-                        initializeAllClients();
-                    } else {
-                        LOG.info("Reconnected?");
-                    }
-                } catch (final MqttException e) {
-                    LOG.error("can't reconnect", e);
-                }
-            }
-
-            @Override
-            public void messageArrived(final String topic, final MqttMessage message) {
-                try {
-                    if(!topic.contains("status")) {
-                        messageHandler.handleMessage(message.toString(), configMap.getConfigForTopic(topic));
-                    }
-                } catch(final Exception e) {
-                    LOG.error("error", e);
-                }
-            }
-
-            @Override
-            public void deliveryComplete(final IMqttDeliveryToken token) {
-                // Do nothing
-            }
-        };
-    }
-
-    private IMqttClient createClient(final ConfigMap configMap, final ServerConfig serverConfig, final MessageHandler messageHandler) throws MqttException {
-        final String clientId = CLIENT_ID + UUID.randomUUID().toString();
-        final IMqttClient client = new MqttClient(serverConfig.serverAddress, clientId);
-
-        client.setCallback(createCallBack(configMap, client, messageHandler));
-        client.connect(setUpConnectionOptions(serverConfig.needUsername));
-
-        configMap.keys().forEach(topic -> {
-            try {
-                LOG.info("subscribing to {}", topic);
-                client.subscribe(topic);
-            } catch (final MqttException e) {
-                LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
-            }
-        });
-
-        if(!StringUtils.isEmpty(serverConfig.statusTopic)) {
-            client.subscribe(serverConfig.statusTopic);
-        }
-
-        LOG.info("Starting mqtt client " + serverConfig.serverAddress);
-
-        return client;
     }
 
     private void handleRoadMessage(final String message, final Config.SensorConfig sensorConfig) {
@@ -205,53 +112,24 @@ public class MqttService {
         }
     }
 
-    private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
+    private void doPost(final Callable c) {
         try {
-            final int httpCode = sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement);
-
-            if(httpCode != HTTP_OK) {
-                LOG.error("post sensor value returned {}", httpCode);
-            }
+            c.call();
         } catch(final Exception e) {
             LOG.error("exception from post", e);
         }
+    }
+
+    private void postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) {
+        doPost(() -> sensorValueService.postSensorValue(sensorName, value, unitOfMeasurement));
     }
 
     private void postLocation(final String entityName, final String latitude, final String longitude,
                               final String navStat, final String heading, final String sog) {
-        try {
-            final int httpCode = sensorValueService.postLocation(entityName, latitude, longitude, navStat, heading, sog);
-
-            if(httpCode != HTTP_OK) {
-                LOG.error("post sensor value returned {}", httpCode);
-            }
-        } catch(final Exception e) {
-            LOG.error("exception from post", e);
-        }
+        doPost(() -> sensorValueService.postLocation(entityName, latitude, longitude, navStat, heading, sog));
     }
 
     private void postTrainGps(final String entityName, final String latitude, final String longitude, final String speed) {
-        try {
-            final int httpCode = sensorValueService.postTrainGps(entityName, latitude, longitude, speed);
-
-            if(httpCode != HTTP_OK) {
-                LOG.error("post sensor value returned {}", httpCode);
-            }
-        } catch(final Exception e) {
-            LOG.error("exception from post", e);
-        }
-
-    }
-
-    private static MqttConnectOptions setUpConnectionOptions(final boolean needUsername) {
-        final MqttConnectOptions connOpts = new MqttConnectOptions();
-        connOpts.setCleanSession(true);
-
-        if(needUsername) {
-            connOpts.setUserName(USERNAME);
-            connOpts.setPassword(PASSWORD.toCharArray());
-        }
-
-        return connOpts;
+        doPost(() -> sensorValueService.postTrainGps(entityName, latitude, longitude, speed));
     }
 }
