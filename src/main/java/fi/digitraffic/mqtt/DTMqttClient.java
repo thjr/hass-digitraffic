@@ -18,6 +18,8 @@ public class DTMqttClient {
     private final ConfigMap configMap;
     private final MqttService.MessageHandler messageHandler;
 
+    private volatile int reconnect = 0;
+
     public DTMqttClient(final ServerConfig serverConfig, final ConfigMap configMap, final MqttService.MessageHandler messageHandler) {
         this.serverConfig = serverConfig;
         this.configMap = configMap;
@@ -30,14 +32,13 @@ public class DTMqttClient {
             public void connectionLost(final Throwable cause) {
                 LOG.error("connection lost", cause);
                 try {
-                    if(!reconnect(client)) {
-                        client.close();
-                        connect();
-                    } else {
-                        LOG.info("Reconnected?");
-                    }
+                    connect();
                 } catch (final MqttException e) {
                     LOG.error("can't reconnect", e);
+
+                    if(reconnect++ > 3) {
+                        System.exit(-1);
+                    }
                 }
             }
 
@@ -69,18 +70,6 @@ public class DTMqttClient {
         }
 
         return connOpts;
-    }
-
-    private static boolean reconnect(final IMqttClient client) {
-        try {
-            client.reconnect();
-
-            return client.isConnected();
-        } catch (final MqttException e) {
-            LOG.error("reconnect failed");
-        }
-
-        return false;
     }
 
     public IMqttClient connect() throws MqttException {
