@@ -9,5 +9,5 @@ RUN \
         openjdk8-jre \
     && rm -fr /tmp/*
 
-CMD [ "/usr/bin/java", "-XX:SharedArchiveFile=app-cds.jsa", "-jar", ""/app.jar" ]
+CMD [ "/usr/bin/java", "-XX:SharedArchiveFile=app-cds.jsa", "-jar", "/app.jar" ]
 
