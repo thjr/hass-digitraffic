@@ -7,13 +7,14 @@ For more information about Digitraffic see http://www.digitraffic.fi
 Installation
 ------------
 
-Easiest way is clone the repository to your hass.io-installation local addons directory and add as a local add-on.
+Easiest way is clone the repository to your hass.io-installation local addons directory(e.g. /usr/share/hassio/addons/local/) 
+and add as a local add-on.
 
 ```
 mvn package
 ```
 
-And the install the add-on.
+And then install the add-on.
 
 Configuration
 -------------

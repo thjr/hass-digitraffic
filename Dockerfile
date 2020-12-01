@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-COPY target/hass-digitraffic-1.0.jar /app.jar
+COPY target/hass-digitraffic-1.1.jar /app.jar
 
 # install java
 RUN \
@@ -9,5 +9,5 @@ RUN \
         openjdk8-jre \
     && rm -fr /tmp/*
 
-CMD [ "/usr/bin/java", "-jar", "/app.jar" ]
+CMD [ "/usr/bin/java", "-XX:SharedArchiveFile=app-cds.jsa", "-jar", ""/app.jar" ]
 
