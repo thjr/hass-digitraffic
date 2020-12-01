@@ -5,18 +5,21 @@ import fi.digitraffic.Config;
 import fi.digitraffic.hass.SensorValueService;
 import fi.digitraffic.mqtt.model.MqttConfig;
 import fi.digitraffic.mqtt.model.MqttSensorValue;
+import io.quarkus.runtime.Startup;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.concurrent.Callable;
 
 import static fi.digitraffic.mqtt.ServerConfig.*;
 
-@Component
+@ApplicationScoped
+@Startup
 public class MqttService {
     private static final Logger LOG = LoggerFactory.getLogger(MqttService.class);
 
@@ -31,11 +34,10 @@ public class MqttService {
     public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
         this.sensorValueService = sensorValueService;
         this.mqttConfigService = mqttConfigService;
-
-        initializeAllClients();
     }
 
-    private void initializeAllClients() throws MqttException {
+    @PostConstruct
+    void initializeAllClients() throws MqttException {
         final MqttConfig options = mqttConfigService.readAndValidate();
 
         if(options != null) {
@@ -68,8 +70,7 @@ public class MqttService {
     }
 
     private void handleSseMessage(final String message, final Config.SensorConfig sensorConfig) {
-        final JsonParser parser = new JsonParser();
-        final JsonObject root = parser.parse(message).getAsJsonObject();
+        final JsonObject root = JsonParser.parseString(message).getAsJsonObject();
 
         final JsonObject properties = root.getAsJsonObject("properties");
         final String value = properties.get(sensorConfig.propertyName).getAsString();
@@ -78,8 +79,7 @@ public class MqttService {
     }
 
     private void handleVesselLocationMessage(final String message, final Config.SensorConfig sensorConfig) {
-        final JsonParser parser = new JsonParser();
-        final JsonObject root = parser.parse(message).getAsJsonObject();
+        final JsonObject root = JsonParser.parseString(message).getAsJsonObject();
 
         final JsonObject geometry = root.getAsJsonObject("geometry");
         final JsonArray coordinates = geometry.getAsJsonArray("coordinates");
@@ -97,8 +97,7 @@ public class MqttService {
     }
 
     private void handleTrainGpsMessage(final String message, final Config.SensorConfig config) {
-        final JsonParser parser = new JsonParser();
-        final JsonObject root = parser.parse(message).getAsJsonObject();
+        final JsonObject root = JsonParser.parseString(message).getAsJsonObject();
 
         final JsonObject location = root.getAsJsonObject("location");
         final JsonArray coordinates = location.getAsJsonArray("coordinates");

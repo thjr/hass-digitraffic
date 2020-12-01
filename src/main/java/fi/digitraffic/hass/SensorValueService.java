@@ -1,11 +1,11 @@
 package fi.digitraffic.hass;
 
 import com.google.gson.Gson;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
-@Component
+@ApplicationScoped
 public class SensorValueService {
     private static final String HASSIO_ADDRESS = "hassio/homeassistant";
     private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
@@ -23,7 +23,7 @@ public class SensorValueService {
     private final String hassioToken;
     private final Gson gson = new Gson();
 
-    public SensorValueService(@Value("${HASSIO_TOKEN}") final String token, @Value("${SKIP_WRITE:false}") final boolean skipWrite) {
+    public SensorValueService(@ConfigProperty(name = "digitraffic.hass.token") final String token, @ConfigProperty(name = "digitraffic.skip_write") final boolean skipWrite) {
         this.skipWrite = skipWrite;
         this.hassioToken = token;
     }

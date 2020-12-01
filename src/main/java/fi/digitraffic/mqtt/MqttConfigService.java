@@ -5,9 +5,10 @@ import fi.digitraffic.hass.ConfigService;
 import fi.digitraffic.mqtt.model.MqttConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
 public class MqttConfigService {
     private final ConfigService configService;
 

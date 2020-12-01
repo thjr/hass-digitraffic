@@ -1,12 +1,12 @@
 package fi.digitraffic.hass;
 
 import com.google.gson.Gson;
-import org.springframework.stereotype.Component;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-@Component
+@ApplicationScoped
 public class ConfigService {
     private static final String OPTIONS_FILENAME = "data/options.json";
 

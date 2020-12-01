@@ -4,7 +4,6 @@ import fi.digitraffic.mqtt.model.ConfigMap;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
@@ -88,7 +87,7 @@ public class DTMqttClient {
             }
         });
 
-        if(!StringUtils.isEmpty(serverConfig.statusTopic)) {
+        if(serverConfig.statusTopic != null) {
             client.subscribe(serverConfig.statusTopic);
         }
 

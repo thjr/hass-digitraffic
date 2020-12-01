@@ -1,8 +1,6 @@
 package fi.digitraffic.mqtt.model;
 
 import fi.digitraffic.Config;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Map;
