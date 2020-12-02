@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-COPY target/hass-digitraffic-1.1-runner.jar /app.jar
+COPY target/quarkus-app/quarkus-run.jar /app.jar
 
 # install java
 RUN \
