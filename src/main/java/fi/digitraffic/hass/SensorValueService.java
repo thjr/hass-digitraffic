@@ -2,12 +2,15 @@ package fi.digitraffic.hass;
 
 import com.google.gson.Gson;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,10 +25,12 @@ public class SensorValueService {
     private final boolean skipWrite;
     private final String hassioToken;
     private final Gson gson = new Gson();
+    private final ResteasyClient client;
 
     public SensorValueService(@ConfigProperty(name = "digitraffic.hass.token") final String token, @ConfigProperty(name = "digitraffic.skip_write") final boolean skipWrite) {
         this.skipWrite = skipWrite;
         this.hassioToken = token;
+        this.client = new ResteasyClientBuilderImpl().build();
     }
 
     public int postSensorValue(final String sensorName, final String value, final String unitOfMeasurement) throws IOException {
@@ -60,24 +65,21 @@ public class SensorValueService {
         return post(url, data);
     }
 
-    private int post(final URL url, final HassStateData data) {
-        LOG.info("posting to {}", url.getPath());
+    private synchronized int post(final URL url, final HassStateData data) {
+        LOG.debug("posting to {}", url.getPath());
 
         if(skipWrite) {
             return 200;
         }
         try {
-            final String message = gson.toJson(data);
-            final HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            final Response response = client.target(url.toURI()).request()
+                    .header("Content-Type", "application/json")
+                    .header("X-HA-Access", hassioToken)
+                    .post(Entity.text(gson.toJson(data)));
 
-            con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("X-HA-Access", hassioToken);
-            con.setRequestMethod("POST");
-            con.setDoOutput(true);
-            con.getOutputStream().write(message.getBytes());
-            con.connect();
+            final int httpCode = response.getStatus();
 
-            final int httpCode = con.getResponseCode();
+            response.close();
 
             if(httpCode != HTTP_OK) {
                 LOG.error("Posting to {} returned {}", url.getPath(), httpCode);

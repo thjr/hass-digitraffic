@@ -33,9 +33,10 @@ public class DTMqttClient {
                 try {
                     connect();
                 } catch (final MqttException e) {
-                    LOG.error("can't reconnect", e);
+                    LOG.error("can't reconnect, count " + reconnect, e);
 
                     if(reconnect++ > 3) {
+                        LOG.error("exiting...");
                         System.exit(-1);
                     }
                 }
@@ -43,12 +44,12 @@ public class DTMqttClient {
 
             @Override
             public void messageArrived(final String topic, final MqttMessage message) {
-                try {
-                    if(!topic.contains("status")) {
+                if(!isStatusTopic(topic)) {
+                    try {
                         messageHandler.handleMessage(message.toString(), configMap.getConfigForTopic(topic));
+                    } catch (final Exception e) {
+                        LOG.error("error", e);
                     }
-                } catch(final Exception e) {
-                    LOG.error("error", e);
                 }
             }
 
@@ -57,6 +58,10 @@ public class DTMqttClient {
                 // Do nothing
             }
         };
+    }
+
+    private static boolean isStatusTopic(final String topic) {
+        return topic.contains("status");
     }
 
     private static MqttConnectOptions setUpConnectionOptions(final boolean needUsername) {
@@ -92,6 +97,8 @@ public class DTMqttClient {
         }
 
         LOG.info("Starting mqtt client " + serverConfig.serverAddress);
+
+        reconnect = 0;
 
         return client;
     }
