@@ -7,9 +7,7 @@ import fi.digitraffic.mqtt.model.MqttConfig;
 import fi.digitraffic.mqtt.model.MqttSensorValue;
 import io.quarkus.runtime.Startup;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.quarkus.logging.Log;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import java.time.Duration;
@@ -21,8 +19,6 @@ import static fi.digitraffic.mqtt.ServerConfig.*;
 @ApplicationScoped
 @Startup
 public class MqttService {
-    private static final Logger LOG = LoggerFactory.getLogger(MqttService.class);
-
     private final Gson gson = new GsonBuilder().registerTypeAdapter(ZonedDateTime.class, (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString())).create();
 
     private final SensorValueService sensorValueService;
@@ -115,7 +111,7 @@ public class MqttService {
         try {
             c.call();
         } catch(final Exception e) {
-            LOG.error("exception from post", e);
+            Log.error("exception from post", e);
         }
     }
 

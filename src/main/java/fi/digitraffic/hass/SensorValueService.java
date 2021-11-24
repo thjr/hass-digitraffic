@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.quarkus.logging.Log;
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
@@ -20,7 +18,6 @@ import static java.net.HttpURLConnection.HTTP_OK;
 @ApplicationScoped
 public class SensorValueService {
     private static final String HASSIO_ADDRESS = "hassio/homeassistant";
-    private static final Logger LOG = LoggerFactory.getLogger(SensorValueService.class);
 
     private final boolean skipWrite;
     private final String hassioToken;
@@ -66,7 +63,7 @@ public class SensorValueService {
     }
 
     private synchronized int post(final URL url, final HassStateData data) {
-        LOG.debug("posting to {}", url.getPath());
+        Log.debugf("posting to {}", url.getPath());
 
         if(skipWrite) {
             return 200;
@@ -82,22 +79,22 @@ public class SensorValueService {
             response.close();
 
             if(httpCode != HTTP_OK) {
-                LOG.error("Posting to {} returned {}", url.getPath(), httpCode);
+                Log.errorf("Posting to {} returned {}", url.getPath(), httpCode);
             }
 
             return httpCode;
         } catch(final Exception e) {
-            LOG.error("Exception posting to " + url.getPath(), e);
+            Log.error("Exception posting to " + url.getPath(), e);
 
             return -1;
         }
     }
 
     private static class HassStateData {
-        final Object state;
+        final String state;
         final Map<String, String> attributes;
 
-        private HassStateData(final Object state, final Map<String, String> attributes) {
+        private HassStateData(final String state, final Map<String, String> attributes) {
             this.state = state;
             this.attributes = attributes;
         }

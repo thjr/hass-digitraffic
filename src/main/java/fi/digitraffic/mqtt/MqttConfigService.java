@@ -3,16 +3,12 @@ package fi.digitraffic.mqtt;
 import fi.digitraffic.Config;
 import fi.digitraffic.hass.ConfigService;
 import fi.digitraffic.mqtt.model.MqttConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.quarkus.logging.Log;
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class MqttConfigService {
     private final ConfigService configService;
-
-    private static final Logger LOG = LoggerFactory.getLogger(MqttConfigService.class);
 
     public MqttConfigService(final ConfigService configService) {
         this.configService = configService;
@@ -27,7 +23,7 @@ public class MqttConfigService {
                 return mqttConfig;
             }
         } catch(final Exception e) {
-            LOG.error("could not get options", e);
+            Log.error("could not get options", e);
         }
 
         return null;
@@ -38,12 +34,12 @@ public class MqttConfigService {
 
         if(mqttConfig.getOptions().stream().anyMatch(this::isTopicInvalid)) {
             notValid = true;
-            LOG.error("wildchars are forbidden!");
+            Log.error("wildchars are forbidden!");
         }
 
         if(mqttConfig.noTopics()) {
             notValid = true;
-            LOG.error("no topics configured!");
+            Log.error("no topics configured!");
         }
 
         return !notValid;

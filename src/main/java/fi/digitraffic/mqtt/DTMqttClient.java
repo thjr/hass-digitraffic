@@ -2,22 +2,16 @@ package fi.digitraffic.mqtt;
 
 import fi.digitraffic.mqtt.model.ConfigMap;
 import org.eclipse.paho.client.mqttv3.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.quarkus.logging.Log;
 import java.util.UUID;
 
 import static fi.digitraffic.mqtt.ServerConfig.*;
 
 public class DTMqttClient {
-    private static final Logger LOG = LoggerFactory.getLogger(DTMqttClient.class);
-
     private IMqttClient client;
     private final ServerConfig serverConfig;
     private final ConfigMap configMap;
     private final MqttService.MessageHandler messageHandler;
-
-    private volatile int reconnect = 0;
 
     public DTMqttClient(final ServerConfig serverConfig, final ConfigMap configMap, final MqttService.MessageHandler messageHandler) {
         this.serverConfig = serverConfig;
@@ -25,21 +19,31 @@ public class DTMqttClient {
         this.messageHandler = messageHandler;
     }
 
+    private void subscribe(final String topic) {
+        try {
+            Log.debugf("subscribing to %s", topic);
+            client.subscribe(topic);
+        } catch (final MqttException e) {
+            Log.error(String.format("Could not subscribe to topic %s", topic), e);
+        }
+    }
+
     private MqttCallback createCallBack(final ConfigMap configMap, IMqttClient client, final MqttService.MessageHandler messageHandler) {
-        return new MqttCallback() {
+        return new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(final boolean reconnect, final String server) {
+                Log.debugf("Connection complete to %s", server);
+
+                configMap.keys().forEach(DTMqttClient.this::subscribe);
+
+                if(serverConfig.statusTopic != null) {
+                    subscribe(serverConfig.statusTopic);
+                }
+            }
+
             @Override
             public void connectionLost(final Throwable cause) {
-                LOG.error("connection lost", cause);
-                try {
-                    connect();
-                } catch (final MqttException e) {
-                    LOG.error("can't reconnect, count " + reconnect, e);
-
-                    if(reconnect++ > 3) {
-                        LOG.error("exiting...");
-                        System.exit(-1);
-                    }
-                }
+                Log.error("connection lost", cause);
             }
 
             @Override
@@ -48,14 +52,14 @@ public class DTMqttClient {
                     try {
                         messageHandler.handleMessage(message.toString(), configMap.getConfigForTopic(topic));
                     } catch (final Exception e) {
-                        LOG.error("error", e);
+                        Log.error("error", e);
                     }
                 }
             }
 
             @Override
-            public void deliveryComplete(final IMqttDeliveryToken token) {
-                // Do nothing
+            public void deliveryComplete(final IMqttDeliveryToken iMqttDeliveryToken) {
+                // yeah ok
             }
         };
     }
@@ -66,7 +70,7 @@ public class DTMqttClient {
 
     private static MqttConnectOptions setUpConnectionOptions(final boolean needUsername) {
         final MqttConnectOptions connOpts = new MqttConnectOptions();
-        connOpts.setCleanSession(true);
+        connOpts.setAutomaticReconnect(true);
 
         if(needUsername) {
             connOpts.setUserName(USERNAME);
@@ -83,22 +87,7 @@ public class DTMqttClient {
         client.setCallback(createCallBack(configMap, client, messageHandler));
         client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
-        configMap.keys().forEach(topic -> {
-            try {
-                LOG.info("subscribing to {}", topic);
-                client.subscribe(topic);
-            } catch (final MqttException e) {
-                LOG.error(String.format("Could not not subscribe to topic %s", topic), e);
-            }
-        });
-
-        if(serverConfig.statusTopic != null) {
-            client.subscribe(serverConfig.statusTopic);
-        }
-
-        LOG.info("Starting mqtt client " + serverConfig.serverAddress);
-
-        reconnect = 0;
+        Log.info("Starting mqtt client " + serverConfig.serverAddress);
 
         return client;
     }
