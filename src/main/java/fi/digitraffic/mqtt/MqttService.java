@@ -27,7 +27,7 @@ public class MqttService {
     private final SensorValueCache sensorValueCache = new SensorValueCache(Duration.ofSeconds(60), Duration.ofMinutes(5)); // if value changes, change value every 60 seconds at max
     private final SensorValueCache locationCache = new SensorValueCache(Duration.ofMinutes(1)); // change value once a minute, no matter what the value
 
-    public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) throws MqttException {
+    public MqttService(final SensorValueService sensorValueService, final MqttConfigService mqttConfigService) {
         this.sensorValueService = sensorValueService;
         this.mqttConfigService = mqttConfigService;
     }

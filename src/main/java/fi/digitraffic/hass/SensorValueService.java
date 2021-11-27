@@ -63,7 +63,7 @@ public class SensorValueService {
     }
 
     private synchronized int post(final URL url, final HassStateData data) {
-        Log.debugf("posting to {}", url.getPath());
+        Log.debugf("posting to %s", url.getPath());
 
         if(skipWrite) {
             return 200;
@@ -79,7 +79,7 @@ public class SensorValueService {
             response.close();
 
             if(httpCode != HTTP_OK) {
-                Log.errorf("Posting to {} returned {}", url.getPath(), httpCode);
+                Log.errorf("Posting to %s returned %s", url.getPath(), httpCode);
             }
 
             return httpCode;
