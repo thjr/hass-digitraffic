@@ -1,0 +1,11 @@
+{
+  "squash": false,
+  "build_from": {
+    "aarch64": "adoptopenjdk/openjdk11:jre-11.0.13_8",
+    "amd64": "adoptopenjdk/openjdk11:jre-11.0.13_8",
+    "armhf": "adoptopenjdk/openjdk11:jre-11.0.13_8",
+    "armv7": "adoptopenjdk/openjdk11:jre-11.0.13_8",
+    "i386": "adoptopenjdk/openjdk11:jre-11.0.13_8"
+  },
+  "args": {}
+}

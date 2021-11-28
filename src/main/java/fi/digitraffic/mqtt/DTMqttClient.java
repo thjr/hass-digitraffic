@@ -80,15 +80,17 @@ public class DTMqttClient {
         return connOpts;
     }
 
-    public IMqttClient connect() throws MqttException {
-        final String clientId = CLIENT_ID + UUID.randomUUID().toString();
-        this.client = new MqttClient(serverConfig.serverAddress, clientId);
+    public void connect() {
+        try {
+            final String clientId = CLIENT_ID + UUID.randomUUID().toString();
+            this.client = new MqttClient(serverConfig.serverAddress, clientId);
 
-        client.setCallback(createCallBack(configMap, client, messageHandler));
-        client.connect(setUpConnectionOptions(serverConfig.needUsername));
+            client.setCallback(createCallBack(configMap, client, messageHandler));
+            client.connect(setUpConnectionOptions(serverConfig.needUsername));
 
-        Log.info("Starting mqtt client " + serverConfig.serverAddress);
-
-        return client;
+            Log.info("Starting mqtt client " + serverConfig.serverAddress);
+        } catch(final Exception e) {
+            Log.errorf("could not start client", e);
+        }
     }
 }

@@ -33,7 +33,7 @@ public class MqttService {
     }
 
     @PostConstruct
-    void initializeAllClients() throws MqttException {
+    void initializeAllClients() {
         final MqttConfig options = mqttConfigService.readAndValidate();
 
         if(options != null) {
